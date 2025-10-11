@@ -499,6 +499,69 @@ async def create_submission(submission: SubmissionCreate, background_tasks: Back
         "message": "Submission created. AI evaluation is processing in the background."
     }
 
+async def transcribe_audio_elevenlabs(audio_path: Path) -> str:
+    """Transcribe audio using ElevenLabs API"""
+    try:
+        import requests
+        
+        url = "https://api.elevenlabs.io/v1/speech-to-text"
+        
+        headers = {
+            "xi-api-key": ELEVENLABS_API_KEY
+        }
+        
+        with open(audio_path, 'rb') as audio_file:
+            files = {
+                'audio': (audio_path.name, audio_file, 'audio/mpeg')
+            }
+            
+            response = requests.post(url, headers=headers, files=files, timeout=120)
+            
+            if response.status_code == 200:
+                result = response.json()
+                transcript = result.get('text', '')
+                logger.info(f"Successfully transcribed audio: {len(transcript)} characters")
+                return transcript
+            else:
+                logger.error(f"ElevenLabs transcription failed: {response.status_code} - {response.text}")
+                return "[Audio transcription failed - please try again or paste transcript manually]"
+                
+    except Exception as e:
+        logger.error(f"Error transcribing audio: {e}")
+        return f"[Audio transcription error: {str(e)}]"
+
+async def process_audio_submission(submission_id: str, audio_path: Path):
+    """Process audio file: transcribe and then evaluate"""
+    try:
+        logger.info(f"Starting audio processing for submission {submission_id}")
+        
+        # Update status
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {"status": "transcribing"}}
+        )
+        
+        # Transcribe audio
+        transcript = await transcribe_audio_elevenlabs(audio_path)
+        
+        # Update submission with transcript
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {"transcript": transcript, "status": "processing"}}
+        )
+        
+        # Now run evaluation
+        await generate_complete_evaluation(submission_id, transcript)
+        
+        logger.info(f"Audio processing completed for submission {submission_id}")
+        
+    except Exception as e:
+        logger.error(f"Error in audio processing: {e}")
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {"status": "error"}}
+        )
+
 @api_router.post("/submissions/upload-audio")
 async def upload_audio(file: UploadFile = File(...), student_id: str = Form(...), background_tasks: BackgroundTasks = None):
     """Upload audio file for OSCE evaluation"""
@@ -507,12 +570,21 @@ async def upload_audio(file: UploadFile = File(...), student_id: str = Form(...)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
+    # Validate file type
+    allowed_extensions = {'.mp3', '.wav', '.m4a', '.mp4', '.mpeg', '.mpga', '.webm'}
+    file_extension = Path(file.filename).suffix.lower()
+    
+    if file_extension not in allowed_extensions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Unsupported audio format. Allowed: {', '.join(allowed_extensions)}"
+        )
+    
     # Save audio file
     audio_dir = Path("/app/backend/audio_uploads")
     audio_dir.mkdir(exist_ok=True)
     
     file_id = str(uuid.uuid4())
-    file_extension = Path(file.filename).suffix
     audio_filename = f"{file_id}{file_extension}"
     audio_path = audio_dir / audio_filename
     
@@ -521,30 +593,28 @@ async def upload_audio(file: UploadFile = File(...), student_id: str = Form(...)
     with open(audio_path, "wb") as f:
         f.write(contents)
     
-    # For now, create submission with placeholder transcript
-    # In production, call ElevenLabs API here to transcribe
-    transcript = "[Audio transcription pending - ElevenLabs API integration needed]"
+    logger.info(f"Audio file saved: {audio_filename} ({len(contents)} bytes)")
     
-    # Create submission
+    # Create submission with pending transcript
     new_submission = Submission(
         student_id=student_id,
         student_name=student['full_name'],
-        transcript=transcript,
+        transcript="[Transcribing audio...]",
         audio_filename=audio_filename,
-        status='processing'
+        status='transcribing'
     )
     
     submission_dict = prepare_for_mongo(new_submission.model_dump())
     await db.submissions.insert_one(submission_dict)
     
-    # Add evaluation to background tasks
+    # Add audio processing (transcription + evaluation) to background tasks
     if background_tasks:
-        background_tasks.add_task(generate_complete_evaluation, new_submission.id, transcript)
+        background_tasks.add_task(process_audio_submission, new_submission.id, audio_path)
     
     return {
         "submission_id": new_submission.id,
-        "status": "processing",
-        "message": "Audio uploaded. Transcription and evaluation will be processed."
+        "status": "transcribing",
+        "message": "Audio uploaded successfully. Transcription and evaluation in progress."
     }
 
 @api_router.get("/submissions/student/{student_id}")

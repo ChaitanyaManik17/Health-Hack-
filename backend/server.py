@@ -32,9 +32,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 ALGORITHM = "HS256"
 
-# LLM API Key
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+# API Keys
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY')
+
+# Configure Gemini
+genai.configure(api_key=GEMINI_API_KEY)
 
 # Create the main app
 app = FastAPI()

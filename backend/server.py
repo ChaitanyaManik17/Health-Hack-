@@ -202,7 +202,9 @@ async def evaluate_communication(transcript: str) -> Dict[str, Any]:
     """Evaluate Communication/Empathy & Clarity Scale (70% pass)"""
     
     try:
-        system_message = """You are an expert medical educator evaluating communication and empathy skills in OSCE performance.
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        
+        prompt = f"""You are an expert medical educator evaluating communication and empathy skills in OSCE performance.
 
 Evaluate based on these domains:
 
@@ -224,21 +226,14 @@ Evaluate based on these domains:
    - Gives patient ownership of health
    - Makes collaborative care plan
 
-Rate on a 5-point scale for each domain (5=Excellent, 1=Unsatisfactory)."""
+Rate on a 5-point scale for each domain (5=Excellent, 1=Unsatisfactory).
 
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"communication-{uuid.uuid4()}",
-            system_message=system_message
-        ).with_model("openai", "gpt-5")
-        
-        user_message = UserMessage(
-            text=f"""Evaluate this OSCE transcript for Communication and Empathy.
+Evaluate this OSCE transcript for Communication and Empathy.
 
 Transcript:
 {transcript}
 
-Provide your response in JSON format:
+Provide your response in JSON format only (no additional text):
 {{
   "fostering_relationship": <score 1-5>,
   "gathering_information": <score 1-5>,
@@ -249,11 +244,10 @@ Provide your response in JSON format:
   "areas_for_improvement": ["list of areas to improve with specific suggestions"],
   "feedback": "Detailed constructive feedback"
 }}"""
-        )
         
-        response = await chat.send_message(user_message)
+        response = model.generate_content(prompt)
+        response_text = response.text.strip()
         
-        response_text = response.strip()
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:

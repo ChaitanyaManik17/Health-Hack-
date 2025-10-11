@@ -212,22 +212,101 @@ const StudentDashboard = () => {
               </Button>
             ) : (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    OSCE Transcript
-                  </label>
-                  <Textarea
-                    placeholder="Paste your OSCE transcript here... The conversation should include the full dialogue between you and the patient."
-                    rows={8}
-                    value={transcriptText}
-                    onChange={(e) => setTranscriptText(e.target.value)}
-                    className="font-mono text-sm"
-                    data-testid="transcript-textarea"
-                  />
-                  <p className="text-xs text-slate-500 mt-2">
-                    Tip: Include the complete conversation for accurate evaluation
-                  </p>
+                {/* Upload Method Selector */}
+                <div className="flex space-x-2 p-1 bg-slate-100 rounded-lg w-fit">
+                  <button
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      uploadMethod === 'transcript'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    onClick={() => setUploadMethod('transcript')}
+                    data-testid="transcript-method-button"
+                  >
+                    Paste Transcript
+                  </button>
+                  <button
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      uploadMethod === 'audio'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    onClick={() => setUploadMethod('audio')}
+                    data-testid="audio-method-button"
+                  >
+                    Upload Audio
+                  </button>
                 </div>
+
+                {uploadMethod === 'transcript' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      OSCE Transcript
+                    </label>
+                    <Textarea
+                      placeholder="Paste your OSCE transcript here... The conversation should include the full dialogue between you and the patient."
+                      rows={8}
+                      value={transcriptText}
+                      onChange={(e) => setTranscriptText(e.target.value)}
+                      className="font-mono text-sm"
+                      data-testid="transcript-textarea"
+                    />
+                    <p className="text-xs text-slate-500 mt-2">
+                      Tip: Include the complete conversation for accurate evaluation
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Audio Recording
+                    </label>
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                      <input
+                        type="file"
+                        accept="audio/*,.mp3,.wav,.m4a,.mp4"
+                        onChange={(e) => setAudioFile(e.target.files[0])}
+                        className="hidden"
+                        id="audio-upload"
+                        data-testid="audio-file-input"
+                      />
+                      <label
+                        htmlFor="audio-upload"
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <Upload className="w-12 h-12 text-slate-400 mb-3" />
+                        {audioFile ? (
+                          <div className="text-sm">
+                            <p className="font-medium text-slate-900">{audioFile.name}</p>
+                            <p className="text-slate-500 mt-1">
+                              {(audioFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-slate-700 font-medium">
+                              Click to upload audio file
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              MP3, WAV, M4A up to 100MB
+                            </p>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                    {audioFile && (
+                      <button
+                        onClick={() => setAudioFile(null)}
+                        className="text-sm text-red-600 hover:text-red-700 mt-2"
+                      >
+                        Remove file
+                      </button>
+                    )}
+                    <p className="text-xs text-slate-500 mt-2">
+                      Audio will be automatically transcribed and evaluated
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex space-x-3">
                   <Button 
                     onClick={handleSubmit}
@@ -241,6 +320,7 @@ const StudentDashboard = () => {
                     onClick={() => {
                       setShowUploadForm(false);
                       setTranscriptText('');
+                      setAudioFile(null);
                     }}
                   >
                     Cancel

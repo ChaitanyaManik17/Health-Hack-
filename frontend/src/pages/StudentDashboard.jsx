@@ -55,7 +55,7 @@ const StudentDashboard = () => {
   };
   
   const handleSubmit = async () => {
-    if (!transcriptText.trim()) {
+    if (uploadMethod === 'transcript' && !transcriptText.trim()) {
       toast({
         title: "Transcript required",
         description: "Please enter or paste your OSCE transcript",
@@ -64,32 +64,71 @@ const StudentDashboard = () => {
       return;
     }
     
+    if (uploadMethod === 'audio' && !audioFile) {
+      toast({
+        title: "Audio file required",
+        description: "Please select an audio file to upload",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/submissions/create`, {
-        student_id: user.id,
-        transcript_text: transcriptText
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      
+      if (uploadMethod === 'transcript') {
+        // Text submission
+        await axios.post(`${API}/submissions/create`, {
+          student_id: user.id,
+          transcript_text: transcriptText
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        // Audio submission
+        const formData = new FormData();
+        formData.append('file', audioFile);
+        formData.append('student_id', user.id);
+        
+        await axios.post(`${API}/submissions/upload-audio`, formData, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+      }
       
       toast({
         title: "Submission successful!",
-        description: "Your OSCE is being evaluated by AI. This may take a minute..."
+        description: "Your OSCE is being evaluated by AI. Check back in 1-2 minutes for results."
       });
       
       setTranscriptText('');
+      setAudioFile(null);
       setShowUploadForm(false);
       
-      // Refresh submissions after a delay
+      // Refresh submissions immediately and after delay
+      fetchSubmissions();
       setTimeout(() => {
         fetchSubmissions();
-      }, 2000);
+      }, 3000);
+      
+      // Poll for updates every 10 seconds for 2 minutes
+      let pollCount = 0;
+      const pollInterval = setInterval(() => {
+        pollCount++;
+        fetchSubmissions();
+        if (pollCount >= 12) { // 12 * 10s = 2 minutes
+          clearInterval(pollInterval);
+        }
+      }, 10000);
+      
     } catch (error) {
+      console.error("Submission error:", error);
       toast({
         title: "Submission failed",
-        description: error.response?.data?.detail || "Could not submit your OSCE",
+        description: error.response?.data?.detail || "Could not submit your OSCE. Please try again.",
         variant: "destructive"
       });
     } finally {

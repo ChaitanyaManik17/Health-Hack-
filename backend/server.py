@@ -270,7 +270,9 @@ async def evaluate_clinical_reasoning(transcript: str) -> Dict[str, Any]:
     """Evaluate Clinical Reasoning using IDEA Rubric (≥6/10 pass)"""
     
     try:
-        system_message = """You are an expert medical educator evaluating clinical reasoning based on the IDEA Rubric.
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        
+        prompt = f"""You are an expert medical educator evaluating clinical reasoning based on the IDEA Rubric.
 
 The IDEA Rubric assesses:
 
@@ -290,21 +292,14 @@ The IDEA Rubric assesses:
    - Reasoning for alternative diagnoses
    - 0 = No explanation, 1 = 1 data point, 2 = ≥2 data points
 
-Total score: 0-10 points (≥6 to pass)"""
+Total score: 0-10 points (≥6 to pass)
 
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"reasoning-{uuid.uuid4()}",
-            system_message=system_message
-        ).with_model("openai", "gpt-5")
-        
-        user_message = UserMessage(
-            text=f"""Evaluate the clinical reasoning demonstrated in this OSCE transcript.
+Evaluate the clinical reasoning demonstrated in this OSCE transcript.
 
 Transcript:
 {transcript}
 
-Provide your response in JSON format:
+Provide your response in JSON format only (no additional text):
 {{
   "interpretive_summary_score": <0-4>,
   "differential_diagnosis_score": <0-2>,
@@ -317,11 +312,10 @@ Provide your response in JSON format:
   "areas_for_improvement": ["Specific suggestions for improvement"],
   "feedback": "Detailed constructive feedback on clinical reasoning"
 }}"""
-        )
         
-        response = await chat.send_message(user_message)
+        response = model.generate_content(prompt)
+        response_text = response.text.strip()
         
-        response_text = response.strip()
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:

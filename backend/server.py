@@ -139,7 +139,9 @@ async def evaluate_critical_actions(transcript: str) -> Dict[str, Any]:
     """Evaluate Critical Action Checklist (20 items, 70% pass)"""
     
     try:
-        system_message = """You are an expert medical educator evaluating OSCE performance based on the Critical Action Checklist.
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        
+        prompt = f"""You are an expert medical educator evaluating OSCE performance based on the Critical Action Checklist.
 
 The Critical Action Checklist has 20 items assessing:
 1. Hypothesis-driven approach to eliciting history
@@ -161,33 +163,23 @@ Key items to evaluate:
 - Physical examination performed
 - Appropriate diagnostic reasoning
 
-Provide a score out of 20 and detailed feedback with specific references to the conversation."""
-
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"critical-{uuid.uuid4()}",
-            system_message=system_message
-        ).with_model("openai", "gpt-5")
-        
-        user_message = UserMessage(
-            text=f"""Evaluate this OSCE transcript for the Critical Action Checklist.
+Evaluate this OSCE transcript for the Critical Action Checklist.
 
 Transcript:
 {transcript}
 
-Provide your response in JSON format:
+Provide your response in JSON format only (no additional text):
 {{
   "score": <number out of 20>,
   "items_completed": ["list of items done well"],
   "items_missed": ["list of items missed or done poorly"],
   "feedback": "Detailed constructive feedback with specific examples from the conversation"
 }}"""
-        )
         
-        response = await chat.send_message(user_message)
+        response = model.generate_content(prompt)
+        response_text = response.text.strip()
         
         # Extract JSON from response
-        response_text = response.strip()
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:

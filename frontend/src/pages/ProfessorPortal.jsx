@@ -533,10 +533,25 @@ const ProfessorPortal = () => {
                         <Button
                           size="sm"
                           onClick={handleSaveEdits}
-                          className="bg-white text-indigo-600 hover:bg-indigo-50"
+                          disabled={isSaved || isSaving}
+                          className={`${isSaved ? 'bg-green-100 text-green-700' : 'bg-white text-indigo-600 hover:bg-indigo-50'}`}
                         >
-                          <Save className="w-4 h-4 mr-1" />
-                          Save
+                          {isSaving ? (
+                            <>
+                              <LoadingSpinner size="sm" className="mr-1" />
+                              Saving...
+                            </>
+                          ) : isSaved ? (
+                            <>
+                              <Save className="w-4 h-4 mr-1" />
+                              Saved ✓
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-4 h-4 mr-1" />
+                              Save Changes
+                            </>
+                          )}
                         </Button>
                       )}
                     </>

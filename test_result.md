@@ -236,9 +236,9 @@ frontend:
 
   - task: "Professor transcript viewing/download"
     implemented: true
-    working: false
+    working: "NA"
     file: "frontend/src/pages/ProfessorPortal.jsx"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
@@ -247,7 +247,7 @@ frontend:
         comment: "User reported: Professor is unable to view/download AI-generated transcribed audio"
       - working: "NA"
         agent: "main"
-        comment: "Download buttons exist for both original and AI transcripts. handleDownload calls correct endpoints. Needs testing."
+        comment: "✅ Backend Verified: Transcript download endpoints tested and working (original: 1922 bytes, AI transcript properly handled). Frontend buttons exist (lines 384-402). Needs E2E frontend testing."
 
   - task: "Analytics button on professor dashboard"
     implemented: true

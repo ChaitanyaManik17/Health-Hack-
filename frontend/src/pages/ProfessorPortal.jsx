@@ -570,44 +570,281 @@ const ProfessorPortal = () => {
             <CardContent className="pt-6 space-y-6">
               {editedScores && (
                 <>
-                  {/* Critical Actions */}
-                  <div className="border-2 border-slate-200 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Critical Actions</h3>
+                  {/* === CRITICAL ACTIONS SECTION === */}
+                  <div className="border-2 border-blue-200 rounded-lg p-6 bg-blue-50">
+                    <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
+                      🎯 Critical Actions Checklist
+                      <span className="ml-auto text-3xl font-bold text-blue-600">
+                        {editedScores.critical_action_score?.toFixed(1)}%
+                      </span>
+                    </h3>
+                    
                     {isEditing && !selectedSubmission.evaluation?.is_read_only ? (
                       <>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          value={editedScores.critical_action_score}
-                          onChange={(e) => setEditedScores({
-                            ...editedScores,
-                            critical_action_score: parseFloat(e.target.value)
-                          })}
-                          className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg mb-3"
-                        />
-                        <Textarea
-                          value={editedScores.critical_action_feedback}
-                          onChange={(e) => setEditedScores({
-                            ...editedScores,
-                            critical_action_feedback: e.target.value
-                          })}
-                          rows={4}
-                        />
+                        <div className="bg-white rounded-lg p-4 mb-4">
+                          <Label className="text-sm font-semibold mb-2 block">Score out of 20</Label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            step="1"
+                            value={editedScores.critical_actions_details.score}
+                            onChange={(e) => handleDetailChange('critical_actions_details', 'score', parseInt(e.target.value))}
+                            className="w-32 px-3 py-2 border-2 border-slate-300 rounded-lg"
+                          />
+                          <span className="ml-3 text-slate-600">/ 20 = {editedScores.critical_action_score?.toFixed(1)}%</span>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg p-4 mb-4">
+                          <Label className="text-sm font-semibold mb-2 block">AI Justification & Feedback</Label>
+                          <Textarea
+                            value={editedScores.critical_action_feedback}
+                            onChange={(e) => handleScoreChange('critical_action_feedback', e.target.value)}
+                            rows={6}
+                            className="font-normal"
+                          />
+                        </div>
                       </>
                     ) : (
-                      <>
-                        <p className="text-3xl font-bold text-blue-600 mb-2">
-                          {editedScores.critical_action_score.toFixed(1)}%
+                      <div className="bg-white rounded-lg p-4">
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {editedScores.critical_action_feedback}
                         </p>
-                        <p className="text-slate-700">{editedScores.critical_action_feedback}</p>
-                      </>
+                      </div>
                     )}
                   </div>
 
-                  {/* Similar sections for Communication and Clinical Reasoning */}
-                  {/* ... truncated for brevity, follow same pattern ... */}
+                  {/* === COMMUNICATION & EMPATHY SECTION === */}
+                  <div className="border-2 border-purple-200 rounded-lg p-6 bg-purple-50">
+                    <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
+                      💬 Communication & Empathy (7 Domains)
+                      <span className="ml-auto text-3xl font-bold text-purple-600">
+                        {editedScores.communication_score?.toFixed(1)}%
+                      </span>
+                    </h3>
+                    
+                    {/* 7 Domain Scores */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      {[
+                        { key: 'sets_stage', label: '1. Sets the Stage' },
+                        { key: 'active_listening', label: '2. Active Listening' },
+                        { key: 'shows_compassion', label: '3. Shows Compassion' },
+                        { key: 'encourages_sharing', label: '4. Encourages Open Sharing' },
+                        { key: 'adjusts_communication', label: '5. Adjusts Communication' },
+                        { key: 'gives_ownership', label: '6. Gives Ownership' },
+                        { key: 'collaborative_plan', label: '7. Collaborative Plan' }
+                      ].map(domain => (
+                        <div key={domain.key} className="bg-white rounded-lg p-3">
+                          <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                            {domain.label}
+                          </Label>
+                          {isEditing && !selectedSubmission.evaluation?.is_read_only ? (
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="number"
+                                min="1"
+                                max="5"
+                                step="1"
+                                value={editedScores.communication_details[domain.key]}
+                                onChange={(e) => handleDetailChange('communication_details', domain.key, parseInt(e.target.value))}
+                                className="w-16 px-2 py-1 border-2 border-slate-300 rounded text-center font-bold"
+                              />
+                              <span className="text-slate-500 text-sm">/ 5</span>
+                            </div>
+                          ) : (
+                            <p className="text-2xl font-bold text-purple-600">
+                              {editedScores.communication_details[domain.key]} / 5
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="bg-white rounded-lg p-4 mb-3">
+                      <p className="text-sm text-slate-600 mb-2">
+                        <strong>Total:</strong> {
+                          editedScores.communication_details.sets_stage +
+                          editedScores.communication_details.active_listening +
+                          editedScores.communication_details.shows_compassion +
+                          editedScores.communication_details.encourages_sharing +
+                          editedScores.communication_details.adjusts_communication +
+                          editedScores.communication_details.gives_ownership +
+                          editedScores.communication_details.collaborative_plan
+                        } / 35 = {editedScores.communication_score?.toFixed(1)}%
+                      </p>
+                    </div>
+                    
+                    {isEditing && !selectedSubmission.evaluation?.is_read_only ? (
+                      <div className="bg-white rounded-lg p-4">
+                        <Label className="text-sm font-semibold mb-2 block">AI Justification & Feedback</Label>
+                        <Textarea
+                          value={editedScores.communication_feedback}
+                          onChange={(e) => handleScoreChange('communication_feedback', e.target.value)}
+                          rows={6}
+                          className="font-normal"
+                        />
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-lg p-4">
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {editedScores.communication_feedback}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* === CLINICAL REASONING SECTION === */}
+                  <div className="border-2 border-indigo-200 rounded-lg p-6 bg-indigo-50">
+                    <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
+                      🧠 Clinical Reasoning (IDEA Rubric)
+                      <span className="ml-auto text-3xl font-bold text-indigo-600">
+                        {editedScores.clinical_reasoning_score} / 10
+                      </span>
+                    </h3>
+                    
+                    {/* IDEA Components */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="bg-white rounded-lg p-3">
+                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                          I - Interpretive Summary
+                        </Label>
+                        {isEditing && !selectedSubmission.evaluation?.is_read_only ? (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max="4"
+                              step="1"
+                              value={editedScores.clinical_reasoning_details.interpretive_summary_score}
+                              onChange={(e) => handleDetailChange('clinical_reasoning_details', 'interpretive_summary_score', parseInt(e.target.value))}
+                              className="w-16 px-2 py-1 border-2 border-slate-300 rounded text-center font-bold"
+                            />
+                            <span className="text-slate-500 text-sm">/ 4</span>
+                          </div>
+                        ) : (
+                          <p className="text-2xl font-bold text-indigo-600">
+                            {editedScores.clinical_reasoning_details.interpretive_summary_score} / 4
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="bg-white rounded-lg p-3">
+                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                          D - Differential Diagnosis
+                        </Label>
+                        {isEditing && !selectedSubmission.evaluation?.is_read_only ? (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max="2"
+                              step="1"
+                              value={editedScores.clinical_reasoning_details.differential_diagnosis_score}
+                              onChange={(e) => handleDetailChange('clinical_reasoning_details', 'differential_diagnosis_score', parseInt(e.target.value))}
+                              className="w-16 px-2 py-1 border-2 border-slate-300 rounded text-center font-bold"
+                            />
+                            <span className="text-slate-500 text-sm">/ 2</span>
+                          </div>
+                        ) : (
+                          <p className="text-2xl font-bold text-indigo-600">
+                            {editedScores.clinical_reasoning_details.differential_diagnosis_score} / 2
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="bg-white rounded-lg p-3">
+                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                          E - Lead Diagnosis Explanation
+                        </Label>
+                        {isEditing && !selectedSubmission.evaluation?.is_read_only ? (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max="2"
+                              step="1"
+                              value={editedScores.clinical_reasoning_details.lead_diagnosis_explanation_score}
+                              onChange={(e) => handleDetailChange('clinical_reasoning_details', 'lead_diagnosis_explanation_score', parseInt(e.target.value))}
+                              className="w-16 px-2 py-1 border-2 border-slate-300 rounded text-center font-bold"
+                            />
+                            <span className="text-slate-500 text-sm">/ 2</span>
+                          </div>
+                        ) : (
+                          <p className="text-2xl font-bold text-indigo-600">
+                            {editedScores.clinical_reasoning_details.lead_diagnosis_explanation_score} / 2
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="bg-white rounded-lg p-3">
+                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                          A - Alternative Diagnosis
+                        </Label>
+                        {isEditing && !selectedSubmission.evaluation?.is_read_only ? (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max="2"
+                              step="1"
+                              value={editedScores.clinical_reasoning_details.alternative_diagnosis_score}
+                              onChange={(e) => handleDetailChange('clinical_reasoning_details', 'alternative_diagnosis_score', parseInt(e.target.value))}
+                              className="w-16 px-2 py-1 border-2 border-slate-300 rounded text-center font-bold"
+                            />
+                            <span className="text-slate-500 text-sm">/ 2</span>
+                          </div>
+                        ) : (
+                          <p className="text-2xl font-bold text-indigo-600">
+                            {editedScores.clinical_reasoning_details.alternative_diagnosis_score} / 2
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg p-4 mb-3">
+                      <p className="text-sm text-slate-600">
+                        <strong>Total IDEA Score:</strong> {editedScores.clinical_reasoning_score} / 10
+                      </p>
+                    </div>
+                    
+                    {isEditing && !selectedSubmission.evaluation?.is_read_only ? (
+                      <div className="bg-white rounded-lg p-4">
+                        <Label className="text-sm font-semibold mb-2 block">AI Justification & Feedback</Label>
+                        <Textarea
+                          value={editedScores.clinical_reasoning_feedback}
+                          onChange={(e) => handleScoreChange('clinical_reasoning_feedback', e.target.value)}
+                          rows={6}
+                          className="font-normal"
+                        />
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-lg p-4">
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {editedScores.clinical_reasoning_feedback}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* === PROFESSOR NOTES === */}
+                  <div className="border-2 border-amber-200 rounded-lg p-6 bg-amber-50">
+                    <h3 className="text-lg font-bold text-slate-900 mb-3">📝 Professor's Additional Notes</h3>
+                    {isEditing && !selectedSubmission.evaluation?.is_read_only ? (
+                      <Textarea
+                        value={editedScores.professor_notes}
+                        onChange={(e) => handleScoreChange('professor_notes', e.target.value)}
+                        rows={4}
+                        placeholder="Add any additional comments or observations..."
+                        className="bg-white"
+                      />
+                    ) : (
+                      <div className="bg-white rounded-lg p-4">
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {editedScores.professor_notes || 'No additional notes'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Publish Button */}
                   {!selectedSubmission.evaluation?.is_read_only && (

@@ -36,6 +36,10 @@ const ProfessorPortal = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedScores, setEditedScores] = useState(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [analyticsQuery, setAnalyticsQuery] = useState('');
+  const [analyticsResults, setAnalyticsResults] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
     fetchSubmissions();

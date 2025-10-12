@@ -37,6 +37,7 @@ const StudentDashboard = () => {
   const [uploadMethod, setUploadMethod] = useState('transcript'); // 'transcript' or 'audio'
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState(''); // 'uploading', 'transcribing', 'processing', 'complete'
+  const [showFeedback, setShowFeedback] = useState(false);
   
   useEffect(() => {
     fetchSubmissions();

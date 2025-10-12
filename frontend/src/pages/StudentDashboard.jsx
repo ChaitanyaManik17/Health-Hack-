@@ -213,13 +213,14 @@ const StudentDashboard = () => {
   
   const getStatusBadge = (status) => {
     const variants = {
-      processing: { color: 'bg-yellow-100 text-yellow-800', text: 'Processing' },
-      evaluated: { color: 'bg-blue-100 text-blue-800', text: 'Evaluated' },
-      published: { color: 'bg-green-100 text-green-800', text: 'Published' },
-      error: { color: 'bg-red-100 text-red-800', text: 'Error' }
+      transcribing: { color: 'bg-cyan-100 text-cyan-800 border-cyan-200', text: '🎤 Transcribing', icon: true },
+      processing: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', text: '⚙️ Processing', icon: true },
+      evaluated: { color: 'bg-blue-100 text-blue-800 border-blue-200', text: '✅ Evaluated', icon: true },
+      published: { color: 'bg-green-100 text-green-800 border-green-200', text: '📤 Published', icon: true },
+      error: { color: 'bg-red-100 text-red-800 border-red-200', text: '❌ Error', icon: true }
     };
     const variant = variants[status] || variants.processing;
-    return <Badge className={variant.color}>{variant.text}</Badge>;
+    return <Badge className={`${variant.color} border`}>{variant.text}</Badge>;
   };
   
   return (

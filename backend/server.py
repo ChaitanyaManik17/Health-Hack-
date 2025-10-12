@@ -527,33 +527,43 @@ async def login(credentials: UserLogin):
 
 @api_router.post("/submissions/create")
 async def create_submission(submission: SubmissionCreate, background_tasks: BackgroundTasks):
-    """Create a new OSCE submission - evaluation runs in background"""
+    """Create a new OSCE submission with progress tracking"""
     # Get student info
     student = await db.users.find_one({"id": submission.student_id})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
+    # Validate professor email exists (optional - can create submission anyway)
+    professor = await db.users.find_one({"email": submission.professor_email, "role": "professor"})
+    if not professor:
+        logger.warning(f"Submission for non-existent professor: {submission.professor_email}")
+    
     # Use provided transcript
     transcript = submission.transcript_text or "No transcript provided"
     
-    # Create submission
+    # Create submission with NEW fields
     new_submission = Submission(
         student_id=submission.student_id,
         student_name=student['full_name'],
+        student_email=student['email'],
+        professor_email=submission.professor_email,
         transcript=transcript,
-        status='processing'
+        original_transcript=transcript if submission.transcript_text else None,
+        status='submitted',  # Changed from 'processing'
+        upload_progress=100,
+        submitted_at=datetime.now(timezone.utc)
     )
     
     submission_dict = prepare_for_mongo(new_submission.model_dump())
     await db.submissions.insert_one(submission_dict)
     
-    # Add evaluation to background tasks
-    background_tasks.add_task(generate_complete_evaluation, new_submission.id, transcript)
+    logger.info(f"Submission created: {new_submission.id} for professor: {submission.professor_email}")
     
     return {
         "submission_id": new_submission.id,
-        "status": "processing",
-        "message": "Submission created. AI evaluation is processing in the background."
+        "status": "submitted",
+        "timestamp": new_submission.submitted_at.isoformat(),
+        "message": "Submission created successfully. Waiting for professor evaluation."
     }
 
 async def transcribe_audio_elevenlabs(audio_path: Path) -> str:

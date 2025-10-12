@@ -486,33 +486,25 @@ async def create_submission(submission: SubmissionCreate, background_tasks: Back
 async def transcribe_audio_elevenlabs(audio_path: Path) -> str:
     """Transcribe audio using ElevenLabs API"""
     try:
-        import requests
+        client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
         
-        url = "https://api.elevenlabs.io/v1/speech-to-text"
+        with open(audio_path, "rb") as fh:
+            result = client.speech_to_text.convert(
+                file=fh,
+                model_id="scribe_v1",
+                language_code="eng",
+                diarize=True,
+                tag_audio_events=True,
+                timestamps_granularity="word"
+            )
         
-        headers = {
-            "xi-api-key": ELEVENLABS_API_KEY
-        }
-        
-        with open(audio_path, 'rb') as audio_file:
-            files = {
-                'audio': (audio_path.name, audio_file, 'audio/mpeg')
-            }
-            
-            response = requests.post(url, headers=headers, files=files, timeout=120)
-            
-            if response.status_code == 200:
-                result = response.json()
-                transcript = result.get('text', '')
-                logger.info(f"Successfully transcribed audio: {len(transcript)} characters")
-                return transcript
-            else:
-                logger.error(f"ElevenLabs transcription failed: {response.status_code} - {response.text}")
-                return "[Audio transcription failed - please try again or paste transcript manually]"
+        transcript = result.text
+        logger.info(f"Successfully transcribed audio: {len(transcript)} characters")
+        return transcript
                 
     except Exception as e:
         logger.error(f"Error transcribing audio: {e}")
-        return f"[Audio transcription error: {str(e)}]"
+        return f"[Audio transcription error: {str(e)}. Please try again or paste transcript manually.]"
 
 async def process_audio_submission(submission_id: str, audio_path: Path):
     """Process audio file: transcribe and then evaluate"""

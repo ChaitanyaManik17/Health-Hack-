@@ -410,15 +410,37 @@ Provide your response in JSON format only (no additional text):
         }
 
 async def generate_complete_evaluation(submission_id: str, transcript: str):
-    """Generate complete OSCE evaluation with all three rubrics - runs in background"""
+    """Generate complete OSCE evaluation with progress tracking"""
     
     try:
         logger.info(f"Starting evaluation for submission {submission_id}")
         
-        # Run all evaluations
+        # Update progress: 10%
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {"evaluation_progress": 10}}
+        )
+        
+        # Run critical actions evaluation
         critical_actions = await evaluate_critical_actions(transcript)
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {"evaluation_progress": 40}}
+        )
+        
+        # Run communication evaluation
         communication = await evaluate_communication(transcript)
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {"evaluation_progress": 70}}
+        )
+        
+        # Run clinical reasoning evaluation
         clinical_reasoning = await evaluate_clinical_reasoning(transcript)
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {"evaluation_progress": 90}}
+        )
         
         # Determine pass/fail
         critical_pass = critical_actions['percentage'] >= 70
@@ -439,6 +461,9 @@ async def generate_complete_evaluation(submission_id: str, transcript: str):
             }
         }
         
+        # Generate HTML report
+        report_html = generate_html_report(evaluation_result, transcript)
+        
         # Create evaluation record
         evaluation = Evaluation(
             submission_id=submission_id,
@@ -449,27 +474,80 @@ async def generate_complete_evaluation(submission_id: str, transcript: str):
             clinical_reasoning_score=clinical_reasoning['total_score'],
             clinical_reasoning_feedback=clinical_reasoning['feedback'],
             overall_pass=overall_pass,
-            detailed_feedback=evaluation_result
+            detailed_feedback=evaluation_result,
+            report_html=report_html
         )
         
         eval_dict = prepare_for_mongo(evaluation.model_dump())
         await db.evaluations.insert_one(eval_dict)
         
-        # Update submission status
+        # Update submission status to evaluated
         await db.submissions.update_one(
             {"id": submission_id},
-            {"$set": {"status": "evaluated"}}
+            {"$set": {
+                "status": "evaluated",
+                "evaluation_progress": 100,
+                "evaluated_at": datetime.now(timezone.utc).isoformat()
+            }}
         )
         
         logger.info(f"Evaluation completed for submission {submission_id}")
         
     except Exception as e:
-        logger.error(f"Error in background evaluation: {e}")
-        # Update submission to error status
+        logger.error(f"Error in evaluation: {e}")
         await db.submissions.update_one(
             {"id": submission_id},
-            {"$set": {"status": "error"}}
+            {"$set": {"status": "error", "evaluation_progress": 0}}
         )
+
+def generate_html_report(evaluation_result: Dict, transcript: str) -> str:
+    """Generate HTML formatted report"""
+    overall_pass = evaluation_result['overall_pass']
+    status_class = "success" if overall_pass else "warning"
+    status_text = "PASS" if overall_pass else "NEEDS IMPROVEMENT"
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Inter, sans-serif; padding: 20px; }}
+            .header {{ background: #1991eb; color: white; padding: 20px; border-radius: 8px; }}
+            .status-{status_class} {{ background: {'#10b981' if overall_pass else '#f59e0b'}; 
+                                     color: white; padding: 10px; border-radius: 4px; 
+                                     display: inline-block; }}
+            .section {{ margin: 20px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; }}
+            .score {{ font-size: 24px; font-weight: bold; color: #1991eb; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>OSCE Evaluation Report</h1>
+            <p>Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+            <div class="status-{status_class}">{status_text}</div>
+        </div>
+        
+        <div class="section">
+            <h2>Critical Actions</h2>
+            <div class="score">{evaluation_result['critical_actions']['percentage']:.1f}%</div>
+            <p>{evaluation_result['critical_actions']['feedback']}</p>
+        </div>
+        
+        <div class="section">
+            <h2>Communication & Empathy</h2>
+            <div class="score">{evaluation_result['communication']['percentage']:.1f}%</div>
+            <p>{evaluation_result['communication']['feedback']}</p>
+        </div>
+        
+        <div class="section">
+            <h2>Clinical Reasoning</h2>
+            <div class="score">{evaluation_result['clinical_reasoning']['total_score']}/10</div>
+            <p>{evaluation_result['clinical_reasoning']['feedback']}</p>
+        </div>
+    </body>
+    </html>
+    """
+    return html
 
 # --- API Routes ---
 

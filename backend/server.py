@@ -200,71 +200,94 @@ Provide your response in JSON format only (no additional text):
         }
 
 async def evaluate_communication(transcript: str) -> Dict[str, Any]:
-    """Evaluate Communication/Empathy & Clarity Scale (70% pass)"""
+    """Evaluate Communication/Empathy & Clarity Scale with 7 detailed domains (70% pass)"""
     
     try:
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
         
-        prompt = f"""You are an expert medical educator evaluating communication and empathy skills in OSCE performance.
+        prompt = f"""You are an expert medical educator evaluating communication and empathy skills in OSCE performance using the Empathy & Clarity Rating Scale.
 
-Evaluate based on these domains:
+Evaluate based on these 7 detailed domains (5-point scale each: 5=Excellent/Desired, 1=Unsatisfactory):
 
-1. **Fostering Relationship / Supporting Emotion:**
-   - Sets stage, makes patient feel at ease, warm introduction
-   - Active listening, conveys understanding
-   - Shows care and compassion
+**1. Sets the Stage (Fostering Relationship):**
+   DESIRED (5): Introduces/explains role; friendly and warm; explains what will happen; recognizes patient's concerns; treats with respect; shows genuine interest
+   UNSATISFACTORY (1): Cold and abrupt; proceeds without explanations
 
-2. **Gathering Information:**
-   - Encourages patient to share openly
-   - Uses open-ended questions
-   - Doesn't interrupt or rush
+**2. Active Listening:**
+   DESIRED (5): Pays close attention; responds appropriately; conveys understanding in own words; acknowledges concerns and anxieties
+   UNSATISFACTORY (1): Looks at notes/computer; talks at patient; doesn't reflect what patient said; closed body posture; dismissive
 
-3. **Providing Information:**
-   - Adjusts communication to patient's level
-   - Explains clearly and checks understanding
+**3. Shows Care and Compassion:**
+   DESIRED (5): Aligns conversation to offer support; reflects language and feelings
+   UNSATISFACTORY (1): Indifference/detachment; doesn't treat patient as individual
 
-4. **Helping Patient Make Decisions:**
-   - Gives patient ownership of health
-   - Makes collaborative care plan
+**4. Encourages Open Sharing:**
+   DESIRED (5): Genuinely interested; interacts with humility without judgment; encourages patient's own words; facilitates conversation
+   UNSATISFACTORY (1): Interrupts; rushes; dismisses patient's story; fails to engage
 
-Rate on a 5-point scale for each domain (5=Excellent, 1=Unsatisfactory).
+**5. Adjusts Communication:**
+   DESIRED (5): Matches preferences and education level; mirrors patient; aligns to context; ensures understanding
+   UNSATISFACTORY (1): Scripted responses; fails to explore understanding
 
-Evaluate this OSCE transcript for Communication and Empathy.
+**6. Gives Ownership of Health:**
+   DESIRED (5): Explores what patient can do; inspires active communication
+   UNSATISFACTORY (1): Talks "at" patient; discourages two-way communication
+
+**7. Makes Collaborative Plan:**
+   DESIRED (5): Adjusts care plan based on patient perspectives; shares decision making
+   UNSATISFACTORY (1): Ignores views, concerns, and social constraints
+
+Evaluate this OSCE transcript:
 
 Transcript:
 {transcript}
 
-Provide your response in JSON format only (no additional text):
+Provide ONLY valid JSON (no markdown, no extra text):
 {{
-  "fostering_relationship": <score 1-5>,
-  "gathering_information": <score 1-5>,
-  "providing_information": <score 1-5>,
-  "helping_decisions": <score 1-5>,
-  "total_score": <sum of above>,
-  "strengths": ["list of communication strengths with examples"],
-  "areas_for_improvement": ["list of areas to improve with specific suggestions"],
-  "feedback": "Detailed constructive feedback"
+  "sets_stage": <1-5>,
+  "active_listening": <1-5>,
+  "shows_compassion": <1-5>,
+  "encourages_sharing": <1-5>,
+  "adjusts_communication": <1-5>,
+  "gives_ownership": <1-5>,
+  "collaborative_plan": <1-5>,
+  "total_score": <sum of all 7>,
+  "strengths": ["specific strength 1", "specific strength 2"],
+  "areas_for_improvement": ["specific improvement 1", "specific improvement 2"],
+  "feedback": "Detailed constructive feedback paragraph"
 }}"""
         
         response = model.generate_content(prompt)
         response_text = response.text.strip()
         
+        # Clean up response
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
             response_text = response_text.split("```")[1].split("```")[0].strip()
         
+        # Remove any leading/trailing whitespace or newlines
+        response_text = response_text.strip()
+        
         result = json.loads(response_text)
-        result['percentage'] = (result['total_score'] / 20) * 100  # Max is 20 (4 domains × 5 points)
+        result['percentage'] = (result['total_score'] / 35) * 100  # Max is 35 (7 domains × 5 points)
         return result
     except Exception as e:
         logger.error(f"Error in communication evaluation: {e}")
+        logger.error(f"Response text: {response_text if 'response_text' in locals() else 'N/A'}")
         return {
-            "total_score": 15,
-            "percentage": 75,
-            "strengths": ["Warm greeting", "Good listening"],
-            "areas_for_improvement": ["More empathy"],
-            "feedback": "Demonstrated good communication skills with warm rapport."
+            "sets_stage": 4,
+            "active_listening": 4,
+            "shows_compassion": 3,
+            "encourages_sharing": 4,
+            "adjusts_communication": 4,
+            "gives_ownership": 3,
+            "collaborative_plan": 3,
+            "total_score": 25,
+            "percentage": 71.4,
+            "strengths": ["Warm greeting and introduction", "Good listening skills"],
+            "areas_for_improvement": ["Show more compassion", "Encourage patient ownership"],
+            "feedback": "Demonstrated good communication skills with warm rapport. Continue to develop empathy and shared decision-making."
         }
 
 async def evaluate_clinical_reasoning(transcript: str) -> Dict[str, Any]:

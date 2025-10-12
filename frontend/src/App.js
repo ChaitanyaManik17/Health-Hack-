@@ -3,9 +3,8 @@ import '@/App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import Login from './pages/Login';
-import StudentDashboard from './pages/StudentDashboard';
-import ProfessorDashboard from './pages/ProfessorDashboard';
-import ProfessorAnalytics from './pages/ProfessorAnalytics';
+import StudentPortal from './pages/StudentPortal';
+import ProfessorPortal from './pages/ProfessorPortal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;

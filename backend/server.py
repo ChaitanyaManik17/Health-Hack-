@@ -1150,17 +1150,17 @@ Also provide 2-3 actionable recommendations for improving student performance.
                     recommendations = [r.strip() for r in rec_text.split("\n") if r.strip() and len(r.strip()) > 10][:3]
         
         except Exception as gemini_error:
-            logger.warning(f"Gemini API unavailable (likely quota exceeded): {gemini_error}")
+            logger.warning(f"Gemini API unavailable (likely quota exceeded): {str(gemini_error)[:200]}")
             # Fallback analysis without Gemini
-            analysis_text = f"""Based on {total_evaluations} evaluations from {total_students} students, the overall pass rate is {pass_rate}%. 
-            Average scores are: Critical Actions {avg_critical}%, Communication {avg_comm}%, and Clinical Reasoning {avg_reasoning}/10. """
+            analysis_text = f"Based on {total_evaluations} evaluations from {total_students} students, the overall pass rate is {pass_rate}%. "
+            analysis_text += f"Average scores are: Critical Actions {avg_critical}%, Communication {avg_comm}%, and Clinical Reasoning {avg_reasoning}/10. "
             
             if pass_rate < 70:
-                analysis_text += f"The pass rate is below target, indicating students need additional support in multiple areas."
+                analysis_text += "The pass rate is below target, indicating students need additional support in multiple areas."
             elif pass_rate >= 85:
-                analysis_text += f"The high pass rate indicates strong overall performance across the cohort."
+                analysis_text += "The high pass rate indicates strong overall performance across the cohort."
             else:
-                analysis_text += f"The pass rate shows room for improvement with targeted interventions."
+                analysis_text += "The pass rate shows room for improvement with targeted interventions."
             
             # Identify weak areas for recommendations
             weak_areas = []
@@ -1171,11 +1171,18 @@ Also provide 2-3 actionable recommendations for improving student performance.
             if avg_reasoning < 7:
                 weak_areas.append("clinical reasoning")
             
-            recommendations = [
-                f"Focus additional practice on {', '.join(weak_areas)}" if weak_areas else "Continue current teaching approach",
-                "Provide more case-based learning opportunities to improve clinical reasoning",
-                "Encourage peer feedback sessions to enhance communication skills"
-            ]
+            if weak_areas:
+                recommendations = [
+                    f"Focus additional practice on {', '.join(weak_areas)}",
+                    "Provide more case-based learning opportunities to improve clinical reasoning",
+                    "Encourage peer feedback sessions to enhance communication skills"
+                ]
+            else:
+                recommendations = [
+                    "Continue current teaching approach which is yielding good results",
+                    "Consider advanced topics for high-performing students",
+                    "Maintain regular assessment and feedback cycles"
+                ]
         
         # Ensure we always have recommendations
         if not recommendations:

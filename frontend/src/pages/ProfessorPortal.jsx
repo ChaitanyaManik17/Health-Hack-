@@ -283,7 +283,7 @@ const ProfessorPortal = () => {
             </div>
             <div className="flex items-center space-x-3">
               <Button
-                onClick={() => setShowAnalytics(!showAnalytics)}
+                onClick={() => navigate('/professor/analytics')}
                 className="bg-purple-600 hover:bg-purple-700"
                 size="sm"
               >

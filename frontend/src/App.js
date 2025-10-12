@@ -8,7 +8,7 @@ import ProfessorPortal from './pages/ProfessorPortal';
 import ProfessorAnalytics from './pages/ProfessorAnalytics';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-export const API = `${BACKEND_URL}/api`;
+export const API = `http://127.0.0.1:8000/api`;
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole }) => {

@@ -17,6 +17,8 @@ import base64
 import asyncio
 import google.generativeai as genai
 from elevenlabs import ElevenLabs
+import boto3
+from utils.healthscribe import main_healthscribe
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -185,77 +187,98 @@ def parse_from_mongo(item: dict) -> dict:
                     pass
     return item
 
+def fetch_summary_from_s3():
+    with open("./transcripts/summary.json", 'r') as file:
+        data = json.load(file)
+    data = data['ClinicalDocumentation']['Sections']
+    fsum = ""
+    for section in data:
+        fsum += section['SectionName']
+        fsum += "\n"
+        for summary in section['Summary']:
+            fsum += summary['SummarizedSegment'] + "\n"
+        fsum += "\n\n"
+    return fsum
+
 # --- AI Evaluation Logic ---
-async def evaluate_critical_actions(transcript: str) -> Dict[str, Any]:
-    """Evaluate Critical Action Checklist (20 items, 70% pass)"""
+async def evaluate_critical_actions(summary: str) -> Dict[str, Any]:
     
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
-        prompt = f"""You are an expert medical educator evaluating OSCE performance based on the Critical Action Checklist.
+        prompt = """
 
-The Critical Action Checklist has 20 items assessing:
-1. Hypothesis-driven approach to eliciting history
-2. Comprehensiveness of history taking for generating differential diagnosis
-3. Use of open-ended and closed-ended questions with follow-up
-4. Performance of key focused physical exam maneuvers
+You are a medical education expert and OSCE examiner. I will provide you with the summary of a clinical encounter between a medical student and a patient, written as part of a clinical reasoning assessment.
 
-Key items to evaluate:
-- Onset and duration of current symptoms
-- Pain location and radiation
-- Character/quality of symptoms
-- Associated symptoms
-- Previous similar episodes
-- Precipitating/relieving factors
-- Medication and alcohol history
-- Family history
-- Social history (smoking, occupation)
-- Vital signs check
-- Physical examination performed
-- Appropriate diagnostic reasoning
+You are to evaluate the student's performance using the Critical Action Checklist, even though the actual checklist items are not available. Instead, assess based on the following themes covered by the checklist:
 
-Evaluate this OSCE transcript for the Critical Action Checklist.
+Was there a hypothesis-driven approach to eliciting the history?
 
-Transcript:
-{transcript}
+Was the history taking comprehensive enough to generate a broad differential diagnosis?
 
-Provide your response in JSON format only (no additional text):
-{{
-  "score": <number out of 20>,
-  "items_completed": ["list of items done well"],
-  "items_missed": ["list of items missed or done poorly"],
-  "feedback": "Detailed constructive feedback with specific examples from the conversation"
-}}"""
-        
+Was the history taking comprehensive enough to prioritize a differential diagnosis?
+
+Did the student use a mix of open-ended and closed-ended questions with appropriate follow-ups?
+
+Were key focused physical exam maneuvers performed (unless the case clearly did not require one)?
+
+Based on your evaluation of the summary, provide your response in JSON format only with the following structure:
+
+{
+  "score": <score out of 20>,
+  "items_completed": ["list of items the student did well"],
+  "items_missed": ["list of items that were missed, incomplete, or done poorly"]
+}
+
+
+Assume that unless explicitly stated, a physical exam was expected. If the summary does not mention one, mark that as a miss. Be fair. Do not talk about the structure of the summary. Consider the clarity, depth, and clinical reasoning demonstrated in the summary. Do not include any commentary outside of the JSON structure.
+This is the summary:
+
+Structured Summary:""" + fetch_summary_from_s3() + """
+
+Provide ONLY valid JSON (no markdown, no extra text):
+"""
+        # print(prompt)
         response = model.generate_content(prompt)
         response_text = response.text.strip()
         
-        # Extract JSON from response
+        # Clean up response
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
             response_text = response_text.split("```")[1].split("```")[0].strip()
         
+        # Remove any leading/trailing whitespace or newlines
+        response_text = response_text.strip()
+        
         result = json.loads(response_text)
-        result['percentage'] = (result['score'] / 20) * 100
         return result
     except Exception as e:
-        logger.error(f"Error in critical actions evaluation: {e}")
-        return {
-            "score": 14,
-            "percentage": 70,
-            "items_completed": ["Basic history taking"],
-            "items_missed": ["Detailed physical exam"],
-            "feedback": "Good basic history taking. Consider more thorough physical examination."
-        }
+        print(e)
+        return {"Failed to grade checklist"}
+
+
+def fetch_from_s3_and_link():
+    with open('./transcripts/transcript.json', 'r') as file:
+        data = json.load(file)
+    data = data['results']['audio_segments']
+    ftrans = ""
+    for segments in data:
+        ftrans += segments['transcript']
+        ftrans += ". "
+    return ftrans
 
 async def evaluate_communication(transcript: str) -> Dict[str, Any]:
     """Evaluate Communication/Empathy & Clarity Scale with 7 detailed domains (70% pass)"""
     
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
-        prompt = f"""You are an expert medical educator evaluating communication and empathy skills in OSCE performance using the Empathy & Clarity Rating Scale.
+        prompt = """
+
+You are an expert medical educator evaluating communication and empathy skills in OSCE performance using the Empathy & Clarity Rating Scale.
 
 Evaluate based on these 7 detailed domains (5-point scale each: 5=Excellent/Desired, 1=Unsatisfactory):
 
@@ -289,9 +312,7 @@ Evaluate based on these 7 detailed domains (5-point scale each: 5=Excellent/Desi
 
 Evaluate this OSCE transcript:
 
-Transcript:
-{transcript}
-
+Transcript:""" + fetch_from_s3_and_link() + """
 Provide ONLY valid JSON (no markdown, no extra text):
 {{
   "sets_stage": <1-5>,
@@ -304,9 +325,9 @@ Provide ONLY valid JSON (no markdown, no extra text):
   "total_score": <sum of all 7>,
   "strengths": ["specific strength 1", "specific strength 2"],
   "areas_for_improvement": ["specific improvement 1", "specific improvement 2"],
-  "feedback": "Detailed constructive feedback paragraph"
+  "feedback": "Detailed constructive feedback paragraph for communication and empathy"
 }}"""
-        
+        # print(prompt)
         response = model.generate_content(prompt)
         response_text = response.text.strip()
         
@@ -320,33 +341,19 @@ Provide ONLY valid JSON (no markdown, no extra text):
         response_text = response_text.strip()
         
         result = json.loads(response_text)
-        result['percentage'] = (result['total_score'] / 35) * 100  # Max is 35 (7 domains × 5 points)
         return result
     except Exception as e:
-        logger.error(f"Error in communication evaluation: {e}")
-        logger.error(f"Response text: {response_text if 'response_text' in locals() else 'N/A'}")
-        return {
-            "sets_stage": 4,
-            "active_listening": 4,
-            "shows_compassion": 3,
-            "encourages_sharing": 4,
-            "adjusts_communication": 4,
-            "gives_ownership": 3,
-            "collaborative_plan": 3,
-            "total_score": 25,
-            "percentage": 71.4,
-            "strengths": ["Warm greeting and introduction", "Good listening skills"],
-            "areas_for_improvement": ["Show more compassion", "Encourage patient ownership"],
-            "feedback": "Demonstrated good communication skills with warm rapport. Continue to develop empathy and shared decision-making."
-        }
+        print(e)
+        return {"Failed to grade empathy"}
 
 async def evaluate_clinical_reasoning(transcript: str) -> Dict[str, Any]:
     """Evaluate Clinical Reasoning using IDEA Rubric (≥6/10 pass)"""
     
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
-        prompt = f"""You are an expert medical educator evaluating clinical reasoning based on the IDEA Rubric.
+        prompt = """You are an expert medical educator evaluating clinical reasoning based on the IDEA Rubric.
 
 The IDEA Rubric assesses:
 
@@ -368,11 +375,9 @@ The IDEA Rubric assesses:
 
 Total score: 0-10 points (≥6 to pass)
 
-Evaluate the clinical reasoning demonstrated in this OSCE transcript.
+Evaluate the clinical reasoning demonstrated in this OSCE summary of conversation between medical student and patient.
 
-Transcript:
-{transcript}
-
+Summary:"""+fetch_summary_from_s3()+"""
 Provide your response in JSON format only (no additional text):
 {{
   "interpretive_summary_score": <0-4>,
@@ -386,28 +391,25 @@ Provide your response in JSON format only (no additional text):
   "areas_for_improvement": ["Specific suggestions for improvement"],
   "feedback": "Detailed constructive feedback on clinical reasoning"
 }}"""
-        
+        # print(prompt)
         response = model.generate_content(prompt)
         response_text = response.text.strip()
         
+        # Clean up response
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
             response_text = response_text.split("```")[1].split("```")[0].strip()
         
+        # Remove any leading/trailing whitespace or newlines
+        response_text = response_text.strip()
+        
         result = json.loads(response_text)
-        result['percentage'] = (result['total_score'] / 10) * 100
         return result
     except Exception as e:
-        logger.error(f"Error in clinical reasoning evaluation: {e}")
-        return {
-            "total_score": 7,
-            "percentage": 70,
-            "differential_diagnoses": ["Asthma", "COPD"],
-            "strengths": ["Good differential"],
-            "areas_for_improvement": ["More detailed reasoning"],
-            "feedback": "Demonstrated solid clinical reasoning with appropriate differential diagnosis."
-        }
+        print(e)
+        return {"Failed to grade IDEA"}
+
 
 async def generate_complete_evaluation(submission_id: str, transcript: str):
     """Generate complete OSCE evaluation with progress tracking"""
@@ -646,26 +648,81 @@ async def create_submission(submission: SubmissionCreate, background_tasks: Back
 
 async def transcribe_audio_elevenlabs(audio_path: Path) -> str:
     """Transcribe audio using ElevenLabs API"""
-    try:
-        client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+#     try:
         
-        with open(audio_path, "rb") as fh:
-            result = client.speech_to_text.convert(
-                file=fh,
-                model_id="scribe_v1",
-                language_code="eng",
-                diarize=True,
-                tag_audio_events=True,
-                timestamps_granularity="word"
-            )
+#         s3 = boto3.client('s3',
+#         aws_access_key_id='ASIA4MTWMAP35P73L33Z',
+#         aws_secret_access_key='b+G5PpLff/i2LPPsoM7J9crok38XCxEqqnTe5MZW',
+#         aws_session_token="IQoJb3JpZ2luX2VjEIf//////////wEaCXVzLWVhc3QtMSJHMEUCIQDpuIhRozpTzbaerFBiQx9l/imGFLF91i+Yj0hBpVHadwIgQ5RrIylM2lVCvKtm5k9t6hcKzERg7OD/mFX1mzle7PgqmQIILxAAGgw4NTE3MjU1MTc4MTUiDIjUOOHLjuO/jfM1KCr2ASKX8QGPQL+Wy/VGrwb3B+RnA+UK0nJzTTapKnPwzuSdITFZBSwIjcEjOZfBPDNpiLnWEPK8PFs2hiIRH/LmLpkUtW4tAuAONcb9CnuLvfWfD728LODHR+tzIFMGV1kl3tNcCmIZO4nMzPXSgqnj1i2kdxVNWccSI/Kk1uu/4ZAMWg6NSGGGtzWErmhxiqtxluKJ+0dfeO3e2bLMGyTEqcBS6MEawH0/zexWqQRmbuFRy9Ym1L/RvbFdYnjlpq5E3bqykfyrojoKcjf9rOdXMqyT2YOw8rRaSh178k2baIfOQoHWo4L1XCkDeZTOSidjJBG8PzzaMzCk8a7HBjqdAaQ8I6kRTmA8HM3uVtLiELzXrHGwSm6gkjRitpcjw8sMvkCMNNGchkoJl1y9cwKYcHjvgrqu1jA7zwO8i+F06A8fvpxPAZMOAPjjkmztwzqFhSJBptXwgdCQMrhXaZZcT3KoA0WZ/sy+T5yoVIqg9CLkWTrJT9crexthOduK2m9i8ZzLJc+odZO9XThsZvZC6JdGSO8vGoGODOUuIBc=",
+#         region_name='us-east-1'  # or your preferred region
+# )
+#         file_path = audio_path
+#         bucket_name = 'audio-upload-shield'
+#         s3_key = 'audio/local_audio.mp3'  # this is the path inside the bucket
+
+#         s3.upload_file(file_path, bucket_name, s3_key)
+#         print("Upload successful!")
         
-        transcript = result.text
-        logger.info(f"Successfully transcribed audio: {len(transcript)} characters")
-        return transcript
-                
-    except Exception as e:
-        logger.error(f"Error transcribing audio: {e}")
-        return f"[Audio transcription error: {str(e)}. Please try again or paste transcript manually.]"
+#         res = await main_healthscribe("s3://" + bucket_name + "/" + s3_key)
+#         if int(res) != 0:
+#             bucket_name = 'output-bucket-shield'
+#             s3_key = f'{res}/summary.json'  # path inside the bucket
+#             local_path = './transcripts/summary.json'  # where to save locally
+#             s3.download_file(bucket_name, s3_key, local_path)
+#         elif int(res) == 0:
+#             logger.error(f"Error transcribing audio: {e}")
+#             return f"[Audio transcription error: {str(e)}. Please try again or paste transcript manually.]"
+
+#     except Exception as e:
+#         logger.error(f"Error transcribing audio: {e}")
+#         return f"[Audio transcription error: {str(e)}. Please try again or paste transcript manually.]"
+    
+#     transcribe = boto3.client('transcribe', region_name='us-east-1')
+#     import time
+#     job_name = str(res)
+#     bucket_name = 'audio-upload-shield'
+#     s3_key = 'audio/local_audio.mp3'
+#     media_uri = "s3://" + bucket_name + "/" + s3_key
+
+#     response = transcribe.start_transcription_job(
+#         TranscriptionJobName=job_name,
+#         Media={'MediaFileUri': media_uri},
+#         MediaFormat='mp3',                  # or 'wav' if you converted
+#         LanguageCode='en-US',
+#         Settings={
+#             'ShowSpeakerLabels': True,
+#             'MaxSpeakerLabels': 2,        # Student + Patient
+#             'ChannelIdentification': False  # Must be False for diarization
+#         },
+#         OutputBucketName='output-bucket-shield'  # where JSON result will be stored
+#     )
+#     print("Job started:", response['TranscriptionJob']['TranscriptionJobName'])
+    
+#     import time
+
+#     while True:
+#         result = transcribe.get_transcription_job(TranscriptionJobName=job_name)
+#         status = result['TranscriptionJob']['TranscriptionJobStatus']
+#         print("Status:", status)
+#         if status in ['COMPLETED', 'FAILED']:
+#             break
+#         time.sleep(10)
+
+#     transcript_uri = result['TranscriptionJob']['Transcript']['TranscriptFileUri']
+#     print(transcript_uri)
+#     bucket_name = 'output-bucket-shield'
+#     s3_key = f'{str(res)}.json'  # path inside the bucket
+#     local_path = './transcripts/transcript.json'  # where to save locally
+#     s3.download_file(bucket_name, s3_key, local_path)
+#     with open(local_path, 'r') as file:
+#         result = json.load(file)
+#     result = result['results']['transcripts'][0]['transcript']
+#     transcript = result
+#     logger.info(f"Successfully transcribed audio: {len(transcript)} characters")
+    transcript = ""
+    return transcript
+        
+
 
 async def process_audio_submission(submission_id: str, audio_path: Path):
     """Process audio file: transcribe and then evaluate"""
@@ -728,7 +785,7 @@ async def upload_audio(
         )
     
     # Save audio file
-    audio_dir = Path("/app/backend/audio_uploads")
+    audio_dir = Path("./audio_uploads")
     audio_dir.mkdir(exist_ok=True)
     
     file_id = str(uuid.uuid4())

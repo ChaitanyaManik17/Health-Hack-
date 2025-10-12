@@ -28,7 +28,7 @@ const SubmissionReceipt = ({ submission, onClose }) => {
             <div>
               <p className="text-xs text-slate-600 font-medium">Submitted At</p>
               <p className="text-base font-semibold text-slate-900">
-                {new Date(submission.timestamp || submission.submitted_at).toLocaleString()}
+                {new Date().toLocaleString()}
               </p>
             </div>
           </div>

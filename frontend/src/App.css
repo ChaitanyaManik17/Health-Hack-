@@ -14,6 +14,17 @@ body {
   min-height: 100vh;
 }
 
+/* S.H.I.E.L.D. Theme Colors */
+:root {
+  --shield-primary: #1991eb;
+  --shield-primary-dark: #0f578d;
+  --shield-secondary: #64748b;
+  --shield-accent: #eab308;
+  --shield-success: #10b981;
+  --shield-warning: #f59e0b;
+  --shield-error: #ef4444;
+}
+
 /* Smooth transitions for interactive elements */
 button, a, input, textarea, select {
   transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
@@ -21,17 +32,17 @@ button, a, input, textarea, select {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Focus styles for accessibility */
+/* Focus styles for accessibility (WCAG AA) */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--shield-primary);
   outline-offset: 2px;
 }
 
-/* Subtle animations */
+/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -43,8 +54,31 @@ select:focus-visible {
   }
 }
 
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Loading skeleton */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Shimmer animation for progress bar */

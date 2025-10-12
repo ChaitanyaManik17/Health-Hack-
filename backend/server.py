@@ -95,10 +95,19 @@ class Submission(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     student_id: str
     student_name: str
+    student_email: EmailStr
+    professor_email: EmailStr  # NEW: Professor assignment
     transcript: str
+    original_transcript: Optional[str] = None  # User-uploaded transcript
+    ai_transcript: Optional[str] = None  # AI-generated from audio
     audio_filename: Optional[str] = None
-    status: str  # 'processing', 'evaluated', 'approved', 'published'
+    status: str  # 'uploading', 'transcribing', 'submitted', 'evaluating', 'evaluated', 'published'
+    upload_progress: int = 0  # 0-100
+    evaluation_progress: int = 0  # 0-100
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    submitted_at: Optional[datetime] = None
+    evaluated_at: Optional[datetime] = None
+    published_at: Optional[datetime] = None
 
 class Evaluation(BaseModel):
     model_config = ConfigDict(extra="ignore")

@@ -747,11 +747,11 @@ async def get_student_submissions(student_id: str):
     
     return result
 
-@api_router.get("/submissions/professor")
-async def get_all_submissions():
-    """Get all submissions for professor review"""
+@api_router.get("/submissions/professor/{professor_email}")
+async def get_professor_submissions(professor_email: str):
+    """Get submissions assigned to a specific professor"""
     submissions = await db.submissions.find(
-        {},
+        {"professor_email": professor_email},
         {"_id": 0}
     ).sort("created_at", -1).to_list(1000)
     
@@ -768,6 +768,37 @@ async def get_all_submissions():
         result.append(sub)
     
     return result
+
+@api_router.post("/submissions/{submission_id}/evaluate")
+async def trigger_evaluation(submission_id: str, background_tasks: BackgroundTasks):
+    """Trigger AI evaluation for a submission (professor action)"""
+    submission = await db.submissions.find_one({"id": submission_id})
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    
+    if submission['status'] not in ['submitted', 'error']:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot evaluate submission in status: {submission['status']}"
+        )
+    
+    # Update status to evaluating
+    await db.submissions.update_one(
+        {"id": submission_id},
+        {"$set": {"status": "evaluating", "evaluation_progress": 0}}
+    )
+    
+    # Add evaluation to background tasks
+    transcript = submission.get('transcript', '')
+    background_tasks.add_task(generate_complete_evaluation, submission_id, transcript)
+    
+    logger.info(f"Evaluation triggered for submission {submission_id}")
+    
+    return {
+        "submission_id": submission_id,
+        "status": "evaluating",
+        "message": "AI evaluation started. Monitor progress for updates."
+    }
 
 @api_router.get("/evaluation/{submission_id}")
 async def get_evaluation(submission_id: str):

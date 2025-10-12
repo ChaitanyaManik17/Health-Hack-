@@ -8,6 +8,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { useToast } from '../hooks/use-toast';
+import FeedbackModal from '../components/FeedbackModal';
 import { 
   Activity, 
   LogOut, 
@@ -16,9 +17,10 @@ import {
   XCircle, 
   FileText,
   TrendingUp,
-  MessageSquare,
+  MessageSquare as MessageSquareIcon,
   Stethoscope,
-  Brain
+  Brain,
+  Star
 } from 'lucide-react';
 
 const StudentDashboard = () => {

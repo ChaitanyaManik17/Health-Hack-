@@ -164,11 +164,28 @@ const ProfessorDashboard = () => {
                 <p className="text-sm text-slate-600">Professor Dashboard</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              <Button 
+                onClick={() => navigate('/professor/analytics')}
+                className="bg-indigo-600 hover:bg-indigo-700"
+                data-testid="analytics-button"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Analytics Hub
+              </Button>
               <div className="text-right">
                 <p className="text-sm font-semibold text-slate-900" data-testid="professor-name">{user.full_name}</p>
                 <p className="text-xs text-slate-600">{user.email}</p>
               </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowFeedback(true)}
+                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+              >
+                <Star className="w-4 h-4 mr-2" />
+                Feedback
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm" 

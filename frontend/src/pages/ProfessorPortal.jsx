@@ -192,6 +192,7 @@ const ProfessorPortal = () => {
   };
 
   const handleSaveEdits = async () => {
+    setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
       await axios.put(
@@ -201,10 +202,11 @@ const ProfessorPortal = () => {
       );
       
       toast({
-        title: "Changes saved",
+        title: "Changes saved ✓",
         description: "Evaluation updated successfully"
       });
       
+      setIsSaved(true);
       setIsEditing(false);
       fetchSubmissions();
     } catch (error) {
@@ -213,7 +215,63 @@ const ProfessorPortal = () => {
         description: error.response?.data?.detail || "Could not save changes",
         variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
+  };
+  
+  // Helper function to recalculate communication score
+  const recalculateCommunicationScore = (details) => {
+    const total = details.sets_stage + details.active_listening + details.shows_compassion +
+                  details.encourages_sharing + details.adjusts_communication +
+                  details.gives_ownership + details.collaborative_plan;
+    return ((total / 35) * 100).toFixed(1);
+  };
+  
+  // Helper function to recalculate clinical reasoning score
+  const recalculateClinicalReasoningScore = (details) => {
+    return details.interpretive_summary_score + details.differential_diagnosis_score +
+           details.lead_diagnosis_explanation_score + details.alternative_diagnosis_score;
+  };
+  
+  // Helper function to recalculate critical actions score
+  const recalculateCriticalActionsScore = (details) => {
+    return ((details.score / 20) * 100).toFixed(1);
+  };
+  
+  // Track changes for save button state
+  const handleScoreChange = (field, value) => {
+    setEditedScores(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setIsSaved(false);
+  };
+  
+  const handleDetailChange = (section, field, value) => {
+    setEditedScores(prev => {
+      const newDetails = {
+        ...prev[section],
+        [field]: value
+      };
+      
+      const updates = {
+        ...prev,
+        [section]: newDetails
+      };
+      
+      // Auto-recalculate main scores
+      if (section === 'communication_details') {
+        updates.communication_score = parseFloat(recalculateCommunicationScore(newDetails));
+      } else if (section === 'clinical_reasoning_details') {
+        updates.clinical_reasoning_score = recalculateClinicalReasoningScore(newDetails);
+      } else if (section === 'critical_actions_details') {
+        updates.critical_action_score = parseFloat(recalculateCriticalActionsScore(newDetails));
+      }
+      
+      return updates;
+    });
+    setIsSaved(false);
   };
 
   const handlePublish = async () => {

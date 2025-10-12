@@ -101,3 +101,237 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  AI-powered OSCE feedback system with S.H.I.E.L.D. theme. Critical bugs to fix:
+  1. Student cannot view report after submission (published status)
+  2. Professor cannot hear/download original audio
+  3. Professor cannot view/download AI-generated transcript
+  4. Analytics button missing on professor dashboard (EXISTS - but analytics not working properly)
+  5. AI evaluation needs to match PDF criteria (7-domain communication assessment)
+  6. UI needs to match reference image design
+  7. Analytics window not showing proper metrics/analysis
+  8. Remove feedback button globally
+  9. Add loading states, error handling, request cancellation
+  10. Secure Gemini API key handling
+
+backend:
+  - task: "Audio file download endpoint"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint exists at /submissions/{submission_id}/audio - needs testing"
+  
+  - task: "Transcript download endpoints (original and AI)"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoints exist at /submissions/{submission_id}/transcript?type=original|ai - needs testing"
+
+  - task: "Report download endpoint for students"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint exists at /evaluation/{evaluation_id}/download - needs testing"
+
+  - task: "Analytics query endpoint"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint exists at /analytics/query - uses Gemini for natural language processing. New Gemini API key updated."
+
+  - task: "7-domain communication evaluation"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Communication evaluation already implements 7 domains with 1-5 scale matching PDF criteria. Needs verification."
+
+  - task: "Gemini API key configuration"
+    implemented: true
+    working: true
+    file: "backend/.env"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Gemini API key updated to: AIzaSyD9i4gzkUg3NeolPafJk_ogJl0_1bctkUU. Backend restarted successfully."
+
+frontend:
+  - task: "Student report viewing (published reports)"
+    implemented: true
+    working: false
+    file: "frontend/src/pages/StudentPortal.jsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Student is unable to view their report after submission"
+      - working: "NA"
+        agent: "main"
+        comment: "handleViewReport function exists but setSelectedReport doesn't render report view. Need to implement report modal/display component."
+
+  - task: "Professor audio playback/download"
+    implemented: true
+    working: false
+    file: "frontend/src/pages/ProfessorPortal.jsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Professor is unable to hear/download original audio"
+      - working: "NA"
+        agent: "main"
+        comment: "handleDownload function exists and calls correct endpoint. Download buttons are rendered for audio, original transcript, and AI transcript. Needs testing."
+
+  - task: "Professor transcript viewing/download"
+    implemented: true
+    working: false
+    file: "frontend/src/pages/ProfessorPortal.jsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Professor is unable to view/download AI-generated transcribed audio"
+      - working: "NA"
+        agent: "main"
+        comment: "Download buttons exist for both original and AI transcripts. handleDownload calls correct endpoints. Needs testing."
+
+  - task: "Analytics button on professor dashboard"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/ProfessorPortal.jsx"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Analytics button missing on professor dashboard"
+      - working: true
+        agent: "main"
+        comment: "Analytics button EXISTS at line 289-296 with BarChart3 icon. Routes to analytics component correctly."
+
+  - task: "Analytics window showing metrics"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/ProfessorAnalytics.jsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Analytics window on the professor's side doesn't show metrics/analysis"
+      - working: "NA"
+        agent: "main"
+        comment: "Analytics component fully implemented with query interface, suggested queries, results display, statistics grid, and recommendations. Needs testing with actual data."
+
+  - task: "Remove feedback button globally"
+    implemented: false
+    working: false
+    file: "frontend/src/**/*.jsx"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Need to search for FeedbackModal usage and remove all references"
+
+  - task: "Loading states and error handling"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/*.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Progress bars, loading spinners, and basic error handling already implemented. May need enhancements."
+
+  - task: "Report display modal for students"
+    implemented: false
+    working: false
+    file: "frontend/src/pages/StudentPortal.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "selectedReport state exists but no UI component to display the report. Need to create report viewer modal."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 0
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Student report viewing (implement report modal)"
+    - "Professor file downloads (audio + transcripts)"
+    - "Analytics functionality with real data"
+    - "Remove feedback button globally"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Initial assessment complete. Gemini API key updated and backend restarted.
+      
+      KEY FINDINGS:
+      1. Backend endpoints for file downloads EXIST and appear correct
+      2. Frontend download buttons EXIST in ProfessorPortal
+      3. Analytics button ALREADY EXISTS in ProfessorPortal (line 289-296)
+      4. Student report viewing needs NEW modal component implementation
+      5. 7-domain communication evaluation ALREADY matches PDF criteria
+      
+      NEXT STEPS:
+      1. Implement student report viewing modal
+      2. Test file download functionality (audio + transcripts)
+      3. Test analytics with actual submissions
+      4. Remove feedback button references
+      5. Run comprehensive backend testing
+      6. Run frontend E2E testing

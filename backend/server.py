@@ -86,6 +86,7 @@ class User(BaseModel):
 
 class SubmissionCreate(BaseModel):
     student_id: str
+    professor_email: EmailStr  # NEW: Professor email for routing
     transcript_text: Optional[str] = None  # For direct transcript input
 
 class Submission(BaseModel):

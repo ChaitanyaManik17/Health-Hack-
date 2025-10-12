@@ -955,6 +955,85 @@ async def get_submission_files(submission_id: str):
     
     return files
 
+@api_router.get("/submissions/{submission_id}/audio")
+async def download_audio(submission_id: str):
+    """Download audio file for a submission"""
+    submission = await db.submissions.find_one({"id": submission_id})
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    
+    audio_filename = submission.get('audio_filename')
+    if not audio_filename:
+        raise HTTPException(status_code=404, detail="No audio file for this submission")
+    
+    audio_path = Path("/app/backend/audio_uploads") / audio_filename
+    if not audio_path.exists():
+        raise HTTPException(status_code=404, detail="Audio file not found on server")
+    
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=str(audio_path),
+        media_type='audio/mpeg',
+        filename=audio_filename
+    )
+
+@api_router.get("/submissions/{submission_id}/transcript")
+async def download_transcript(submission_id: str, type: str = 'original'):
+    """Download transcript (original or AI-generated)"""
+    submission = await db.submissions.find_one({"id": submission_id})
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    
+    if type == 'original':
+        transcript = submission.get('original_transcript') or submission.get('transcript')
+    elif type == 'ai':
+        transcript = submission.get('ai_transcript')
+    else:
+        transcript = submission.get('transcript')
+    
+    if not transcript:
+        raise HTTPException(status_code=404, detail=f"No {type} transcript available")
+    
+    from fastapi.responses import Response
+    return Response(
+        content=transcript,
+        media_type='text/plain',
+        headers={
+            'Content-Disposition': f'attachment; filename="{type}_transcript_{submission_id}.txt"'
+        }
+    )
+
+@api_router.get("/evaluation/{evaluation_id}/report")
+async def get_evaluation_report(evaluation_id: str):
+    """Get evaluation report HTML"""
+    evaluation = await db.evaluations.find_one({"id": evaluation_id}, {"_id": 0})
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+    
+    evaluation = parse_from_mongo(evaluation)
+    return evaluation
+
+@api_router.get("/evaluation/{evaluation_id}/download")
+async def download_report(evaluation_id: str):
+    """Download evaluation report as HTML"""
+    evaluation = await db.evaluations.find_one({"id": evaluation_id})
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+    
+    report_html = evaluation.get('report_html', '')
+    if not report_html:
+        # Generate report if not exists
+        report_html = generate_html_report(evaluation.get('detailed_feedback', {}), '')
+    
+    from fastapi.responses import Response
+    return Response(
+        content=report_html,
+        media_type='text/html',
+        headers={
+            'Content-Disposition': f'attachment; filename="OSCE_Report_{evaluation_id}.html"'
+        }
+    )
+
 @api_router.get("/")
 async def root():
     return {"message": "MedEd OSCE Evaluation API"}

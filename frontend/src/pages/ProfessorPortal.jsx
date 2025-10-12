@@ -285,7 +285,15 @@ const ProfessorPortal = () => {
                 <p className="text-sm text-indigo-600 font-medium">Professor Portal</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              <Button
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                className="bg-purple-600 hover:bg-purple-700"
+                size="sm"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Analytics
+              </Button>
               <div className="text-right">
                 <p className="text-sm font-semibold text-slate-900">{user.full_name}</p>
                 <p className="text-xs text-slate-600">{user.email}</p>

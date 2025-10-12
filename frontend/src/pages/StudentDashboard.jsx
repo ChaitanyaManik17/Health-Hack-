@@ -249,6 +249,16 @@ const StudentDashboard = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
+                onClick={() => setShowFeedback(true)}
+                data-testid="feedback-button"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                <Star className="w-4 h-4 mr-2" />
+                Feedback
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
                 onClick={handleLogout}
                 data-testid="logout-button"
               >

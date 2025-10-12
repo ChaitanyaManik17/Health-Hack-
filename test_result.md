@@ -405,3 +405,40 @@ agent_communication:
       
       BACKEND CORE FUNCTIONALITY: 100% WORKING
       All critical OSCE workflows (submission → evaluation → publishing → student access) are fully functional.
+  
+  - agent: "main"
+    message: |
+      ✅ PROFESSOR DETAILED REPORT EDITING - IMPLEMENTED
+      
+      NEW FEATURES:
+      1. **Comprehensive Detailed Report View**
+         - Shows all AI-generated justifications for each parameter
+         - Displays 7 communication domain scores with individual breakdowns
+         - Shows IDEA rubric component scores (I, D, E, A)
+         - Displays critical actions score out of 20
+         - All sections color-coded and organized
+      
+      2. **Full Parameter Editing**
+         - Edit ALL 7 communication domain scores (1-5 each)
+         - Edit all 4 IDEA rubric components (I: 0-4, D/E/A: 0-2 each)
+         - Edit critical actions score (0-20)
+         - Edit all feedback text for each section
+         - Edit professor notes
+      
+      3. **Automatic Score Recalculation**
+         - Communication score auto-updates when any of 7 domains change
+         - Clinical reasoning score auto-updates when IDEA components change
+         - Critical actions percentage auto-calculates from score/20
+         - Real-time display of totals
+      
+      4. **Smart Save Button**
+         - Disabled and faded when no changes made
+         - Shows "Saved ✓" state after saving
+         - Re-enables immediately when any field is edited
+         - Tracks dirty state across all fields
+         - Prevents accidental duplicate saves
+      
+      READY FOR TESTING:
+      - Professor detailed report viewing
+      - Individual parameter editing with auto-recalculation
+      - Smart save button state management

@@ -708,6 +708,34 @@ async def publish_evaluation(evaluation_id: str):
 async def root():
     return {"message": "MedEd OSCE Evaluation API"}
 
+@api_router.get("/submission-status/{submission_id}")
+async def get_submission_status(submission_id: str):
+    """Get detailed status of a submission"""
+    submission = await db.submissions.find_one({"id": submission_id}, {"_id": 0})
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    
+    submission = parse_from_mongo(submission)
+    
+    # Get evaluation if exists
+    evaluation = await db.evaluations.find_one({"submission_id": submission_id}, {"_id": 0})
+    if evaluation:
+        evaluation = parse_from_mongo(evaluation)
+        submission['evaluation'] = evaluation
+    
+    # Calculate progress percentage based on status
+    progress_map = {
+        'transcribing': 25,
+        'processing': 50,
+        'evaluated': 100,
+        'published': 100,
+        'error': 100
+    }
+    
+    submission['progress'] = progress_map.get(submission['status'], 0)
+    
+    return submission
+
 # Include router
 app.include_router(api_router)
 

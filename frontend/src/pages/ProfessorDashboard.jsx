@@ -19,8 +19,11 @@ import {
   User,
   Stethoscope,
   MessageSquare,
-  Brain
+  Brain,
+  BarChart3,
+  Star
 } from 'lucide-react';
+import FeedbackModal from '../components/FeedbackModal';
 
 const ProfessorDashboard = () => {
   const navigate = useNavigate();

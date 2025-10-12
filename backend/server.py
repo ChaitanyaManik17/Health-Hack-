@@ -33,12 +33,32 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 ALGORITHM = "HS256"
 
-# API Keys
+# API Keys with validation
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY')
 
-# Configure Gemini
+# Validate required API keys at boot
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY environment variable is required but not set")
+if not ELEVENLABS_API_KEY:
+    logger.warning("ELEVENLABS_API_KEY not set - audio transcription will be disabled")
+
+# Configure Gemini with initial key
 genai.configure(api_key=GEMINI_API_KEY)
+logger.info(f"Gemini API configured with key ending in ...{GEMINI_API_KEY[-8:]}")
+
+# Hot-swap API key function
+def reconfigure_gemini_key(new_key: str):
+    """Hot-swap Gemini API key without downtime"""
+    global GEMINI_API_KEY
+    try:
+        genai.configure(api_key=new_key)
+        GEMINI_API_KEY = new_key
+        logger.info(f"Gemini API key updated successfully (ending in ...{new_key[-8:]})")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to reconfigure Gemini API key: {e}")
+        return False
 
 # Create the main app
 app = FastAPI()

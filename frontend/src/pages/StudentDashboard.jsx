@@ -575,7 +575,7 @@ const StudentDashboard = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
-                      <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
+                      <MessageSquareIcon className="w-5 h-5 mr-2 text-purple-600" />
                       Communication & Empathy (7 Domains)
                     </CardTitle>
                   </CardHeader>

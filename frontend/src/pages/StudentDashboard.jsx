@@ -559,22 +559,74 @@ const StudentDashboard = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                       <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
-                      Communication & Empathy
+                      Communication & Empathy (7 Domains)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-700 font-medium">Score:</span>
+                      <span className="text-slate-700 font-medium">Overall Score:</span>
                       <span className={`text-2xl font-bold ${selectedSubmission.evaluation.communication_score >= 70 ? 'text-green-600' : 'text-red-600'}`}>
                         {selectedSubmission.evaluation.communication_score.toFixed(1)}%
                       </span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-3">
                       <div 
-                        className={`h-3 rounded-full ${selectedSubmission.evaluation.communication_score >= 70 ? 'bg-green-500' : 'bg-red-500'}`}
+                        className={`h-3 rounded-full ${selectedSubmission.evaluation.communication_score >= 70 ? 'bg-purple-500' : 'bg-red-500'}`}
                         style={{ width: `${Math.min(selectedSubmission.evaluation.communication_score, 100)}%` }}
                       />
                     </div>
+                    
+                    {/* Detailed domain breakdown if available */}
+                    {selectedSubmission.evaluation.detailed_feedback?.communication && (
+                      <div className="mt-4 space-y-2 bg-purple-50 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-purple-900 mb-2">Domain Scores (out of 5):</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          {selectedSubmission.evaluation.detailed_feedback.communication.sets_stage && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Sets Stage:</span>
+                              <span className="font-medium">{selectedSubmission.evaluation.detailed_feedback.communication.sets_stage}/5</span>
+                            </div>
+                          )}
+                          {selectedSubmission.evaluation.detailed_feedback.communication.active_listening && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Active Listen:</span>
+                              <span className="font-medium">{selectedSubmission.evaluation.detailed_feedback.communication.active_listening}/5</span>
+                            </div>
+                          )}
+                          {selectedSubmission.evaluation.detailed_feedback.communication.shows_compassion && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Compassion:</span>
+                              <span className="font-medium">{selectedSubmission.evaluation.detailed_feedback.communication.shows_compassion}/5</span>
+                            </div>
+                          )}
+                          {selectedSubmission.evaluation.detailed_feedback.communication.encourages_sharing && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Encourages:</span>
+                              <span className="font-medium">{selectedSubmission.evaluation.detailed_feedback.communication.encourages_sharing}/5</span>
+                            </div>
+                          )}
+                          {selectedSubmission.evaluation.detailed_feedback.communication.adjusts_communication && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Adjusts:</span>
+                              <span className="font-medium">{selectedSubmission.evaluation.detailed_feedback.communication.adjusts_communication}/5</span>
+                            </div>
+                          )}
+                          {selectedSubmission.evaluation.detailed_feedback.communication.gives_ownership && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Ownership:</span>
+                              <span className="font-medium">{selectedSubmission.evaluation.detailed_feedback.communication.gives_ownership}/5</span>
+                            </div>
+                          )}
+                          {selectedSubmission.evaluation.detailed_feedback.communication.collaborative_plan && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Collab Plan:</span>
+                              <span className="font-medium">{selectedSubmission.evaluation.detailed_feedback.communication.collaborative_plan}/5</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     <p className="text-sm text-slate-600 mt-3">{selectedSubmission.evaluation.communication_feedback}</p>
                   </CardContent>
                 </Card>

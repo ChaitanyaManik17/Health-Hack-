@@ -48,6 +48,14 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/professor/analytics" 
+            element={
+              <ProtectedRoute requiredRole="professor">
+                <ProfessorAnalytics />
+              </ProtectedRoute>
+            } 
+          />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>

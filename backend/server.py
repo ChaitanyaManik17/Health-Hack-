@@ -746,6 +746,137 @@ async def get_submission_status(submission_id: str):
     
     return submission
 
+@api_router.post("/feedback")
+async def submit_feedback(feedback: FeedbackCreate):
+    """Submit user feedback"""
+    try:
+        feedback_dict = feedback.model_dump()
+        feedback_dict['id'] = str(uuid.uuid4())
+        feedback_dict['created_at'] = datetime.now(timezone.utc).isoformat()
+        feedback_dict = prepare_for_mongo(feedback_dict)
+        
+        await db.feedback.insert_one(feedback_dict)
+        
+        logger.info(f"Feedback received from {feedback.user_name}: {feedback.rating} stars")
+        
+        return {"message": "Feedback submitted successfully", "id": feedback_dict['id']}
+    except Exception as e:
+        logger.error(f"Error submitting feedback: {e}")
+        raise HTTPException(status_code=500, detail="Could not submit feedback")
+
+@api_router.post("/analytics/query")
+async def analytics_query(query_data: AnalyticsQuery):
+    """Process natural language query for analytics"""
+    try:
+        query = query_data.query.lower()
+        
+        # Fetch all evaluations
+        evaluations = await db.evaluations.find({}, {"_id": 0}).to_list(1000)
+        submissions = await db.submissions.find({}, {"_id": 0}).to_list(1000)
+        
+        # Create submission map
+        submission_map = {sub['id']: sub for sub in submissions}
+        
+        # Calculate statistics
+        total_students = len(set(sub['student_id'] for sub in submissions))
+        total_evaluations = len(evaluations)
+        
+        if total_evaluations == 0:
+            return {
+                "analysis": "No evaluations found yet. Students need to submit OSCEs first.",
+                "statistics": {"total_students": total_students, "total_evaluations": 0},
+                "data": [],
+                "recommendations": ["Encourage students to submit their OSCE recordings"]
+            }
+        
+        # Calculate averages
+        passed = sum(1 for e in evaluations if e.get('overall_pass', False))
+        pass_rate = round((passed / total_evaluations) * 100, 1)
+        
+        avg_critical = round(sum(e.get('critical_action_score', 0) for e in evaluations) / total_evaluations, 1)
+        avg_comm = round(sum(e.get('communication_score', 0) for e in evaluations) / total_evaluations, 1)
+        avg_reasoning = round(sum(e.get('clinical_reasoning_score', 0) for e in evaluations) / total_evaluations, 1)
+        
+        # Use Gemini to generate natural language analysis
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        
+        context = f"""
+Student Performance Data:
+- Total Students: {total_students}
+- Total Evaluations: {total_evaluations}
+- Pass Rate: {pass_rate}%
+- Average Critical Actions Score: {avg_critical}%
+- Average Communication Score: {avg_comm}%
+- Average Clinical Reasoning Score: {avg_reasoning}/10
+
+Student Query: {query_data.query}
+
+Provide a concise, insightful analysis (2-3 sentences) answering the query based on the data above.
+Also provide 2-3 actionable recommendations for improving student performance.
+"""
+        
+        response = model.generate_content(context)
+        analysis_text = response.text.strip()
+        
+        # Extract recommendations (simple parsing)
+        recommendations = []
+        if "recommend" in analysis_text.lower():
+            parts = analysis_text.split("Recommendation")
+            if len(parts) > 1:
+                rec_text = parts[1]
+                recommendations = [r.strip() for r in rec_text.split("\n") if r.strip() and len(r.strip()) > 10][:3]
+        
+        if not recommendations:
+            recommendations = [
+                "Focus on areas with scores below 70%",
+                "Provide additional practice for clinical reasoning",
+                "Encourage peer feedback sessions"
+            ]
+        
+        # Prepare response based on query type
+        statistics = {
+            "total_students": total_students,
+            "total_evaluations": total_evaluations,
+            "pass_rate": pass_rate,
+            "avg_critical_actions": avg_critical,
+            "avg_communication": avg_comm,
+            "avg_reasoning": avg_reasoning
+        }
+        
+        # Specific data based on query
+        data = []
+        if "empathy" in query or "communication" in query:
+            data = [
+                {
+                    "student": submission_map.get(e['submission_id'], {}).get('student_name', 'Unknown'),
+                    "communication_score": e.get('communication_score', 0)
+                }
+                for e in evaluations
+            ]
+        elif "fail" in query or "need improvement" in query or "weakness" in query:
+            data = [
+                {
+                    "student": submission_map.get(e['submission_id'], {}).get('student_name', 'Unknown'),
+                    "status": "Pass" if e.get('overall_pass', False) else "Needs Improvement",
+                    "critical_actions": e.get('critical_action_score', 0),
+                    "communication": e.get('communication_score', 0),
+                    "reasoning": e.get('clinical_reasoning_score', 0)
+                }
+                for e in evaluations
+                if not e.get('overall_pass', False)
+            ]
+        
+        return {
+            "analysis": analysis_text,
+            "statistics": statistics,
+            "data": data[:10],  # Limit to 10 items
+            "recommendations": recommendations
+        }
+        
+    except Exception as e:
+        logger.error(f"Error processing analytics query: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not process query: {str(e)}")
+
 # Include router
 app.include_router(api_router)
 

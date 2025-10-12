@@ -376,13 +376,51 @@ const StudentDashboard = () => {
                   </div>
                 )}
 
+                {/* Progress Bar */}
+                {(isSubmitting || uploadProgress > 0) && (
+                  <div className="space-y-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-blue-900">
+                        {uploadStatus === 'uploading' && '📤 Uploading...'}
+                        {uploadStatus === 'transcribing' && '🎤 Transcribing audio...'}
+                        {uploadStatus === 'processing' && '🤖 AI is evaluating...'}
+                        {uploadStatus === 'complete' && '✅ Complete!'}
+                        {!uploadStatus && 'Processing...'}
+                      </span>
+                      <span className="text-sm font-semibold text-blue-700">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-blue-200 rounded-full h-3 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${uploadProgress}%` }}
+                      >
+                        <div className="h-full w-full opacity-50 bg-gradient-to-r from-transparent via-white to-transparent animate-shimmer"></div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-blue-700">
+                      {uploadStatus === 'uploading' && 'Uploading your file...'}
+                      {uploadStatus === 'transcribing' && 'Converting audio to text using AI...'}
+                      {uploadStatus === 'processing' && 'Analyzing your OSCE performance across 3 rubrics...'}
+                      {uploadStatus === 'complete' && 'Evaluation complete! Refresh to see results.'}
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex space-x-3">
                   <Button 
                     onClick={handleSubmit}
                     disabled={isSubmitting}
                     data-testid="submit-transcript-button"
+                    className="min-w-[180px]"
                   >
-                    {isSubmitting ? 'Submitting...' : 'Submit for Evaluation'}
+                    {isSubmitting ? (
+                      <span className="flex items-center">
+                        <Activity className="w-4 h-4 mr-2 animate-spin" />
+                        Submitting...
+                      </span>
+                    ) : (
+                      'Submit for Evaluation'
+                    )}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -390,7 +428,10 @@ const StudentDashboard = () => {
                       setShowUploadForm(false);
                       setTranscriptText('');
                       setAudioFile(null);
+                      setUploadProgress(0);
+                      setUploadStatus('');
                     }}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>

@@ -830,18 +830,52 @@ async def update_evaluation(evaluation_id: str, updates: EvaluationUpdate):
 
 @api_router.post("/evaluation/{evaluation_id}/publish")
 async def publish_evaluation(evaluation_id: str):
-    """Publish evaluation to student"""
+    """Publish evaluation to student (makes it read-only)"""
     evaluation = await db.evaluations.find_one({"id": evaluation_id})
     if not evaluation:
         raise HTTPException(status_code=404, detail="Evaluation not found")
     
+    # Update evaluation to published and read-only
+    await db.evaluations.update_one(
+        {"id": evaluation_id},
+        {"$set": {
+            "is_published": True,
+            "is_read_only": True
+        }}
+    )
+    
     # Update submission status
     await db.submissions.update_one(
         {"id": evaluation['submission_id']},
-        {"$set": {"status": "published"}}
+        {"$set": {
+            "status": "published",
+            "published_at": datetime.now(timezone.utc).isoformat()
+        }}
     )
     
-    return {"message": "Evaluation published to student"}
+    logger.info(f"Evaluation {evaluation_id} published and locked")
+    
+    return {
+        "message": "Evaluation published to student and locked",
+        "is_read_only": True
+    }
+
+@api_router.get("/submissions/{submission_id}/files")
+async def get_submission_files(submission_id: str):
+    """Get file download info for a submission"""
+    submission = await db.submissions.find_one({"id": submission_id}, {"_id": 0})
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    
+    files = {
+        "audio_file": submission.get('audio_filename'),
+        "original_transcript": submission.get('original_transcript'),
+        "ai_transcript": submission.get('ai_transcript'),
+        "has_audio": bool(submission.get('audio_filename')),
+        "has_transcript": bool(submission.get('original_transcript') or submission.get('ai_transcript'))
+    }
+    
+    return files
 
 @api_router.get("/")
 async def root():

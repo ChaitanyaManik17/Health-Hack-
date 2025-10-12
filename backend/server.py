@@ -651,10 +651,10 @@ async def transcribe_audio_elevenlabs(audio_path: Path) -> str:
     try:
         
         s3 = boto3.client('s3',
-        aws_access_key_id=Aws_access_key_id,
-        aws_secret_access_key=Aws_secret_access_key,
-        aws_session_token=Aws_session_token,
-        region_name=Region  # or your preferred region
+        aws_access_key_id='ASIA4MTWMAP35P73L33Z',
+        aws_secret_access_key='b+G5PpLff/i2LPPsoM7J9crok38XCxEqqnTe5MZW',
+        aws_session_token="IQoJb3JpZ2luX2VjEIf//////////wEaCXVzLWVhc3QtMSJHMEUCIQDpuIhRozpTzbaerFBiQx9l/imGFLF91i+Yj0hBpVHadwIgQ5RrIylM2lVCvKtm5k9t6hcKzERg7OD/mFX1mzle7PgqmQIILxAAGgw4NTE3MjU1MTc4MTUiDIjUOOHLjuO/jfM1KCr2ASKX8QGPQL+Wy/VGrwb3B+RnA+UK0nJzTTapKnPwzuSdITFZBSwIjcEjOZfBPDNpiLnWEPK8PFs2hiIRH/LmLpkUtW4tAuAONcb9CnuLvfWfD728LODHR+tzIFMGV1kl3tNcCmIZO4nMzPXSgqnj1i2kdxVNWccSI/Kk1uu/4ZAMWg6NSGGGtzWErmhxiqtxluKJ+0dfeO3e2bLMGyTEqcBS6MEawH0/zexWqQRmbuFRy9Ym1L/RvbFdYnjlpq5E3bqykfyrojoKcjf9rOdXMqyT2YOw8rRaSh178k2baIfOQoHWo4L1XCkDeZTOSidjJBG8PzzaMzCk8a7HBjqdAaQ8I6kRTmA8HM3uVtLiELzXrHGwSm6gkjRitpcjw8sMvkCMNNGchkoJl1y9cwKYcHjvgrqu1jA7zwO8i+F06A8fvpxPAZMOAPjjkmztwzqFhSJBptXwgdCQMrhXaZZcT3KoA0WZ/sy+T5yoVIqg9CLkWTrJT9crexthOduK2m9i8ZzLJc+odZO9XThsZvZC6JdGSO8vGoGODOUuIBc=",
+        region_name='us-east-1'  # or your preferred region
 )
         file_path = audio_path
         bucket_name = 'audio-upload-shield'

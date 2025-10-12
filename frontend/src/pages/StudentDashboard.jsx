@@ -76,55 +76,76 @@ const StudentDashboard = () => {
     }
     
     setIsSubmitting(true);
+    setUploadProgress(0);
+    
     try {
       const token = localStorage.getItem('token');
       
       if (uploadMethod === 'transcript') {
-        // Text submission
-        await axios.post(`${API}/submissions/create`, {
+        // Text submission with simulated progress
+        setUploadStatus('uploading');
+        setUploadProgress(30);
+        
+        const response = await axios.post(`${API}/submissions/create`, {
           student_id: user.id,
           transcript_text: transcriptText
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        
+        setUploadProgress(60);
+        setUploadStatus('processing');
+        
+        // Track submission progress
+        const submissionId = response.data.submission_id;
+        trackSubmissionProgress(submissionId);
+        
       } else {
-        // Audio submission
+        // Audio submission with real progress
+        setUploadStatus('uploading');
+        
         const formData = new FormData();
         formData.append('file', audioFile);
         formData.append('student_id', user.id);
         
-        await axios.post(`${API}/submissions/upload-audio`, formData, {
+        const response = await axios.post(`${API}/submissions/upload-audio`, formData, {
           headers: { 
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(Math.min(percentCompleted, 95));
           }
         });
+        
+        setUploadProgress(100);
+        setUploadStatus('transcribing');
+        
+        // Track submission progress
+        const submissionId = response.data.submission_id;
+        trackSubmissionProgress(submissionId);
       }
       
       toast({
         title: "Submission successful!",
-        description: "Your OSCE is being evaluated by AI. Check back in 1-2 minutes for results."
+        description: uploadMethod === 'audio' 
+          ? "Audio uploaded! Transcription and AI evaluation in progress..." 
+          : "Your OSCE is being evaluated by AI. Check back in 1-2 minutes for results."
       });
       
       setTranscriptText('');
       setAudioFile(null);
-      setShowUploadForm(false);
       
-      // Refresh submissions immediately and after delay
-      fetchSubmissions();
+      // Don't close form immediately, show progress
       setTimeout(() => {
-        fetchSubmissions();
+        setShowUploadForm(false);
+        setUploadProgress(0);
+        setUploadStatus('');
       }, 3000);
       
-      // Poll for updates every 10 seconds for 2 minutes
-      let pollCount = 0;
-      const pollInterval = setInterval(() => {
-        pollCount++;
-        fetchSubmissions();
-        if (pollCount >= 12) { // 12 * 10s = 2 minutes
-          clearInterval(pollInterval);
-        }
-      }, 10000);
+      // Refresh submissions
+      fetchSubmissions();
       
     } catch (error) {
       console.error("Submission error:", error);
@@ -133,9 +154,55 @@ const StudentDashboard = () => {
         description: error.response?.data?.detail || "Could not submit your OSCE. Please try again.",
         variant: "destructive"
       });
+      setUploadProgress(0);
+      setUploadStatus('');
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const trackSubmissionProgress = (submissionId) => {
+    // Poll submission status
+    let pollCount = 0;
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+      
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API}/submission-status/${submissionId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const status = response.data.status;
+        
+        if (status === 'transcribing') {
+          setUploadStatus('transcribing');
+          setUploadProgress(40);
+        } else if (status === 'processing') {
+          setUploadStatus('processing');
+          setUploadProgress(70);
+        } else if (status === 'evaluated' || status === 'published') {
+          setUploadStatus('complete');
+          setUploadProgress(100);
+          clearInterval(pollInterval);
+          fetchSubmissions();
+        } else if (status === 'error') {
+          clearInterval(pollInterval);
+          setUploadStatus('');
+          setUploadProgress(0);
+        }
+        
+        fetchSubmissions();
+      } catch (error) {
+        console.error("Error tracking progress:", error);
+      }
+      
+      if (pollCount >= 24) { // 24 * 5s = 2 minutes
+        clearInterval(pollInterval);
+        setUploadStatus('');
+        setUploadProgress(0);
+      }
+    }, 5000);
   };
   
   const handleLogout = () => {

@@ -139,15 +139,55 @@ const ProfessorPortal = () => {
     }
 
     setSelectedSubmission(submission);
+    
+    // Initialize with all detailed scores from evaluation
+    const detailed = submission.evaluation.detailed_feedback || {};
+    
     setEditedScores({
+      // Main scores
       critical_action_score: submission.evaluation.critical_action_score,
       communication_score: submission.evaluation.communication_score,
       clinical_reasoning_score: submission.evaluation.clinical_reasoning_score,
+      
+      // Main feedback
       critical_action_feedback: submission.evaluation.critical_action_feedback,
       communication_feedback: submission.evaluation.communication_feedback,
       clinical_reasoning_feedback: submission.evaluation.clinical_reasoning_feedback,
-      professor_notes: submission.evaluation.professor_notes || ''
+      professor_notes: submission.evaluation.professor_notes || '',
+      
+      // Detailed Communication Scores (7 domains)
+      communication_details: {
+        sets_stage: detailed.communication?.sets_stage || 3,
+        active_listening: detailed.communication?.active_listening || 3,
+        shows_compassion: detailed.communication?.shows_compassion || 3,
+        encourages_sharing: detailed.communication?.encourages_sharing || 3,
+        adjusts_communication: detailed.communication?.adjusts_communication || 3,
+        gives_ownership: detailed.communication?.gives_ownership || 3,
+        collaborative_plan: detailed.communication?.collaborative_plan || 3,
+        strengths: detailed.communication?.strengths || [],
+        areas_for_improvement: detailed.communication?.areas_for_improvement || []
+      },
+      
+      // Detailed Critical Actions
+      critical_actions_details: {
+        score: detailed.critical_actions?.score || 14,
+        items_completed: detailed.critical_actions?.items_completed || [],
+        items_missed: detailed.critical_actions?.items_missed || []
+      },
+      
+      // Detailed Clinical Reasoning
+      clinical_reasoning_details: {
+        interpretive_summary_score: detailed.clinical_reasoning?.interpretive_summary_score || 2,
+        differential_diagnosis_score: detailed.clinical_reasoning?.differential_diagnosis_score || 1,
+        lead_diagnosis_explanation_score: detailed.clinical_reasoning?.lead_diagnosis_explanation_score || 1,
+        alternative_diagnosis_score: detailed.clinical_reasoning?.alternative_diagnosis_score || 1,
+        differential_diagnoses: detailed.clinical_reasoning?.differential_diagnoses || [],
+        strengths: detailed.clinical_reasoning?.strengths || [],
+        areas_for_improvement: detailed.clinical_reasoning?.areas_for_improvement || []
+      }
     });
+    
+    setIsSaved(true);
     setShowEditor(true);
   };
 

@@ -1117,10 +1117,14 @@ async def analytics_query(query_data: AnalyticsQuery):
         avg_comm = round(sum(e.get('communication_score', 0) for e in evaluations) / total_evaluations, 1)
         avg_reasoning = round(sum(e.get('clinical_reasoning_score', 0) for e in evaluations) / total_evaluations, 1)
         
-        # Use Gemini to generate natural language analysis
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        # Try to use Gemini for analysis with fallback for quota issues
+        analysis_text = ""
+        recommendations = []
         
-        context = f"""
+        try:
+            model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            
+            context = f"""
 Student Performance Data:
 - Total Students: {total_students}
 - Total Evaluations: {total_evaluations}
@@ -1134,18 +1138,46 @@ Student Query: {query_data.query}
 Provide a concise, insightful analysis (2-3 sentences) answering the query based on the data above.
 Also provide 2-3 actionable recommendations for improving student performance.
 """
+            
+            response = model.generate_content(context)
+            analysis_text = response.text.strip()
+            
+            # Extract recommendations (simple parsing)
+            if "recommend" in analysis_text.lower():
+                parts = analysis_text.split("Recommendation")
+                if len(parts) > 1:
+                    rec_text = parts[1]
+                    recommendations = [r.strip() for r in rec_text.split("\n") if r.strip() and len(r.strip()) > 10][:3]
         
-        response = model.generate_content(context)
-        analysis_text = response.text.strip()
+        except Exception as gemini_error:
+            logger.warning(f"Gemini API unavailable (likely quota exceeded): {gemini_error}")
+            # Fallback analysis without Gemini
+            analysis_text = f"""Based on {total_evaluations} evaluations from {total_students} students, the overall pass rate is {pass_rate}%. 
+            Average scores are: Critical Actions {avg_critical}%, Communication {avg_comm}%, and Clinical Reasoning {avg_reasoning}/10. """
+            
+            if pass_rate < 70:
+                analysis_text += f"The pass rate is below target, indicating students need additional support in multiple areas."
+            elif pass_rate >= 85:
+                analysis_text += f"The high pass rate indicates strong overall performance across the cohort."
+            else:
+                analysis_text += f"The pass rate shows room for improvement with targeted interventions."
+            
+            # Identify weak areas for recommendations
+            weak_areas = []
+            if avg_critical < 75:
+                weak_areas.append("critical actions")
+            if avg_comm < 75:
+                weak_areas.append("communication skills")
+            if avg_reasoning < 7:
+                weak_areas.append("clinical reasoning")
+            
+            recommendations = [
+                f"Focus additional practice on {', '.join(weak_areas)}" if weak_areas else "Continue current teaching approach",
+                "Provide more case-based learning opportunities to improve clinical reasoning",
+                "Encourage peer feedback sessions to enhance communication skills"
+            ]
         
-        # Extract recommendations (simple parsing)
-        recommendations = []
-        if "recommend" in analysis_text.lower():
-            parts = analysis_text.split("Recommendation")
-            if len(parts) > 1:
-                rec_text = parts[1]
-                recommendations = [r.strip() for r in rec_text.split("\n") if r.strip() and len(r.strip()) > 10][:3]
-        
+        # Ensure we always have recommendations
         if not recommendations:
             recommendations = [
                 "Focus on areas with scores below 70%",

@@ -648,77 +648,77 @@ async def create_submission(submission: SubmissionCreate, background_tasks: Back
 
 async def transcribe_audio_elevenlabs(audio_path: Path) -> str:
     """Transcribe audio using ElevenLabs API"""
-#     try:
+    try:
         
-#         s3 = boto3.client('s3',
-#         aws_access_key_id='ASIA4MTWMAP35P73L33Z',
-#         aws_secret_access_key='b+G5PpLff/i2LPPsoM7J9crok38XCxEqqnTe5MZW',
-#         aws_session_token="IQoJb3JpZ2luX2VjEIf//////////wEaCXVzLWVhc3QtMSJHMEUCIQDpuIhRozpTzbaerFBiQx9l/imGFLF91i+Yj0hBpVHadwIgQ5RrIylM2lVCvKtm5k9t6hcKzERg7OD/mFX1mzle7PgqmQIILxAAGgw4NTE3MjU1MTc4MTUiDIjUOOHLjuO/jfM1KCr2ASKX8QGPQL+Wy/VGrwb3B+RnA+UK0nJzTTapKnPwzuSdITFZBSwIjcEjOZfBPDNpiLnWEPK8PFs2hiIRH/LmLpkUtW4tAuAONcb9CnuLvfWfD728LODHR+tzIFMGV1kl3tNcCmIZO4nMzPXSgqnj1i2kdxVNWccSI/Kk1uu/4ZAMWg6NSGGGtzWErmhxiqtxluKJ+0dfeO3e2bLMGyTEqcBS6MEawH0/zexWqQRmbuFRy9Ym1L/RvbFdYnjlpq5E3bqykfyrojoKcjf9rOdXMqyT2YOw8rRaSh178k2baIfOQoHWo4L1XCkDeZTOSidjJBG8PzzaMzCk8a7HBjqdAaQ8I6kRTmA8HM3uVtLiELzXrHGwSm6gkjRitpcjw8sMvkCMNNGchkoJl1y9cwKYcHjvgrqu1jA7zwO8i+F06A8fvpxPAZMOAPjjkmztwzqFhSJBptXwgdCQMrhXaZZcT3KoA0WZ/sy+T5yoVIqg9CLkWTrJT9crexthOduK2m9i8ZzLJc+odZO9XThsZvZC6JdGSO8vGoGODOUuIBc=",
-#         region_name='us-east-1'  # or your preferred region
-# )
-#         file_path = audio_path
-#         bucket_name = 'audio-upload-shield'
-#         s3_key = 'audio/local_audio.mp3'  # this is the path inside the bucket
+        s3 = boto3.client('s3',
+        aws_access_key_id=Aws_access_key_id,
+        aws_secret_access_key=Aws_secret_access_key,
+        aws_session_token=Aws_session_token,
+        region_name=Region  # or your preferred region
+)
+        file_path = audio_path
+        bucket_name = 'audio-upload-shield'
+        s3_key = 'audio/local_audio.mp3'  # this is the path inside the bucket
 
-#         s3.upload_file(file_path, bucket_name, s3_key)
-#         print("Upload successful!")
+        s3.upload_file(file_path, bucket_name, s3_key)
+        print("Upload successful!")
         
-#         res = await main_healthscribe("s3://" + bucket_name + "/" + s3_key)
-#         if int(res) != 0:
-#             bucket_name = 'output-bucket-shield'
-#             s3_key = f'{res}/summary.json'  # path inside the bucket
-#             local_path = './transcripts/summary.json'  # where to save locally
-#             s3.download_file(bucket_name, s3_key, local_path)
-#         elif int(res) == 0:
-#             logger.error(f"Error transcribing audio: {e}")
-#             return f"[Audio transcription error: {str(e)}. Please try again or paste transcript manually.]"
+        res = await main_healthscribe("s3://" + bucket_name + "/" + s3_key)
+        if int(res) != 0:
+            bucket_name = 'output-bucket-shield'
+            s3_key = f'{res}/summary.json'  # path inside the bucket
+            local_path = './transcripts/summary.json'  # where to save locally
+            s3.download_file(bucket_name, s3_key, local_path)
+        elif int(res) == 0:
+            logger.error(f"Error transcribing audio: {e}")
+            return f"[Audio transcription error: {str(e)}. Please try again or paste transcript manually.]"
 
-#     except Exception as e:
-#         logger.error(f"Error transcribing audio: {e}")
-#         return f"[Audio transcription error: {str(e)}. Please try again or paste transcript manually.]"
+    except Exception as e:
+        logger.error(f"Error transcribing audio: {e}")
+        return f"[Audio transcription error: {str(e)}. Please try again or paste transcript manually.]"
     
-#     transcribe = boto3.client('transcribe', region_name='us-east-1')
-#     import time
-#     job_name = str(res)
-#     bucket_name = 'audio-upload-shield'
-#     s3_key = 'audio/local_audio.mp3'
-#     media_uri = "s3://" + bucket_name + "/" + s3_key
+    transcribe = boto3.client('transcribe', region_name='us-east-1')
+    import time
+    job_name = str(res)
+    bucket_name = 'audio-upload-shield'
+    s3_key = 'audio/local_audio.mp3'
+    media_uri = "s3://" + bucket_name + "/" + s3_key
 
-#     response = transcribe.start_transcription_job(
-#         TranscriptionJobName=job_name,
-#         Media={'MediaFileUri': media_uri},
-#         MediaFormat='mp3',                  # or 'wav' if you converted
-#         LanguageCode='en-US',
-#         Settings={
-#             'ShowSpeakerLabels': True,
-#             'MaxSpeakerLabels': 2,        # Student + Patient
-#             'ChannelIdentification': False  # Must be False for diarization
-#         },
-#         OutputBucketName='output-bucket-shield'  # where JSON result will be stored
-#     )
-#     print("Job started:", response['TranscriptionJob']['TranscriptionJobName'])
+    response = transcribe.start_transcription_job(
+        TranscriptionJobName=job_name,
+        Media={'MediaFileUri': media_uri},
+        MediaFormat='mp3',                  # or 'wav' if you converted
+        LanguageCode='en-US',
+        Settings={
+            'ShowSpeakerLabels': True,
+            'MaxSpeakerLabels': 2,        # Student + Patient
+            'ChannelIdentification': False  # Must be False for diarization
+        },
+        OutputBucketName='output-bucket-shield'  # where JSON result will be stored
+    )
+    print("Job started:", response['TranscriptionJob']['TranscriptionJobName'])
     
-#     import time
+    import time
 
-#     while True:
-#         result = transcribe.get_transcription_job(TranscriptionJobName=job_name)
-#         status = result['TranscriptionJob']['TranscriptionJobStatus']
-#         print("Status:", status)
-#         if status in ['COMPLETED', 'FAILED']:
-#             break
-#         time.sleep(10)
+    while True:
+        result = transcribe.get_transcription_job(TranscriptionJobName=job_name)
+        status = result['TranscriptionJob']['TranscriptionJobStatus']
+        print("Status:", status)
+        if status in ['COMPLETED', 'FAILED']:
+            break
+        time.sleep(10)
 
-#     transcript_uri = result['TranscriptionJob']['Transcript']['TranscriptFileUri']
-#     print(transcript_uri)
-#     bucket_name = 'output-bucket-shield'
-#     s3_key = f'{str(res)}.json'  # path inside the bucket
-#     local_path = './transcripts/transcript.json'  # where to save locally
-#     s3.download_file(bucket_name, s3_key, local_path)
-#     with open(local_path, 'r') as file:
-#         result = json.load(file)
-#     result = result['results']['transcripts'][0]['transcript']
-#     transcript = result
-#     logger.info(f"Successfully transcribed audio: {len(transcript)} characters")
+    transcript_uri = result['TranscriptionJob']['Transcript']['TranscriptFileUri']
+    print(transcript_uri)
+    bucket_name = 'output-bucket-shield'
+    s3_key = f'{str(res)}.json'  # path inside the bucket
+    local_path = './transcripts/transcript.json'  # where to save locally
+    s3.download_file(bucket_name, s3_key, local_path)
+    with open(local_path, 'r') as file:
+        result = json.load(file)
+    result = result['results']['transcripts'][0]['transcript']
+    transcript = result
+    logger.info(f"Successfully transcribed audio: {len(transcript)} characters")
     transcript = ""
     return transcript
         

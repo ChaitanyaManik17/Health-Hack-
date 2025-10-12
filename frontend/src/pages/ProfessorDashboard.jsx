@@ -36,6 +36,7 @@ const ProfessorDashboard = () => {
   const [editedEvaluation, setEditedEvaluation] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   
   useEffect(() => {
     fetchSubmissions();

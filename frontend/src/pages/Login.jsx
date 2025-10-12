@@ -92,14 +92,40 @@ const Login = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
-            <Activity className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <svg
+              width="80"
+              height="80"
+              viewBox="0 0 100 100"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M50 5 L90 20 L90 50 Q90 80 50 95 Q10 80 10 50 L10 20 Z"
+                fill="url(#shieldGradient)"
+                stroke="#1474bc"
+                strokeWidth="2"
+              />
+              <path
+                d="M50 15 L80 27 L80 50 Q80 72 50 85 Q20 72 20 50 L20 27 Z"
+                fill="#ffffff"
+                fillOpacity="0.15"
+              />
+              <rect x="46" y="30" width="8" height="40" fill="#ffffff" rx="2" />
+              <rect x="30" y="46" width="40" height="8" fill="#ffffff" rx="2" />
+              <defs>
+                <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#1991eb" />
+                  <stop offset="100%" stopColor="#0f578d" />
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">MedEd OSCE</h1>
-          <p className="text-slate-600">AI-Powered Clinical Evaluation</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">S.H.I.E.L.D. Medical</h1>
+          <p className="text-slate-600">AI-Powered OSCE Evaluation</p>
         </div>
         
         <Card className="border-0 shadow-2xl">

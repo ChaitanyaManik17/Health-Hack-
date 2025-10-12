@@ -622,12 +622,22 @@ async def process_audio_submission(submission_id: str, audio_path: Path):
         )
 
 @api_router.post("/submissions/upload-audio")
-async def upload_audio(file: UploadFile = File(...), student_id: str = Form(...), background_tasks: BackgroundTasks = None):
-    """Upload audio file for OSCE evaluation"""
+async def upload_audio(
+    file: UploadFile = File(...), 
+    student_id: str = Form(...), 
+    professor_email: str = Form(...),  # NEW: Required field
+    background_tasks: BackgroundTasks = None
+):
+    """Upload audio file for OSCE evaluation with progress tracking"""
     # Get student info
     student = await db.users.find_one({"id": student_id})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    
+    # Validate professor email
+    professor = await db.users.find_one({"email": professor_email, "role": "professor"})
+    if not professor:
+        logger.warning(f"Audio upload for non-existent professor: {professor_email}")
     
     # Validate file type
     allowed_extensions = {'.mp3', '.wav', '.m4a', '.mp4', '.mpeg', '.mpga', '.webm'}
@@ -647,34 +657,72 @@ async def upload_audio(file: UploadFile = File(...), student_id: str = Form(...)
     audio_filename = f"{file_id}{file_extension}"
     audio_path = audio_dir / audio_filename
     
-    # Save file
+    # Save file with progress tracking
     contents = await file.read()
     with open(audio_path, "wb") as f:
         f.write(contents)
     
     logger.info(f"Audio file saved: {audio_filename} ({len(contents)} bytes)")
     
-    # Create submission with pending transcript
+    # Create submission with NEW fields
     new_submission = Submission(
         student_id=student_id,
         student_name=student['full_name'],
-        transcript="[Transcribing audio...]",
+        student_email=student['email'],
+        professor_email=professor_email,
+        transcript="[Audio transcription in progress...]",
         audio_filename=audio_filename,
-        status='transcribing'
+        status='transcribing',
+        upload_progress=100
     )
     
     submission_dict = prepare_for_mongo(new_submission.model_dump())
     await db.submissions.insert_one(submission_dict)
     
-    # Add audio processing (transcription + evaluation) to background tasks
+    # Add audio processing (transcription only - no auto-evaluation) to background tasks
     if background_tasks:
-        background_tasks.add_task(process_audio_submission, new_submission.id, audio_path)
+        background_tasks.add_task(process_audio_transcription, new_submission.id, audio_path)
     
     return {
         "submission_id": new_submission.id,
         "status": "transcribing",
-        "message": "Audio uploaded successfully. Transcription and evaluation in progress."
+        "upload_progress": 100,
+        "message": "Audio uploaded successfully. Transcription in progress."
     }
+
+async def process_audio_transcription(submission_id: str, audio_path: Path):
+    """Process audio file: transcribe only (no auto-evaluation)"""
+    try:
+        logger.info(f"Starting audio transcription for submission {submission_id}")
+        
+        # Update status
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {"status": "transcribing", "upload_progress": 100}}
+        )
+        
+        # Transcribe audio
+        transcript = await transcribe_audio_elevenlabs(audio_path)
+        
+        # Update submission with transcript
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {
+                "transcript": transcript,
+                "ai_transcript": transcript,
+                "status": "submitted",
+                "submitted_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        logger.info(f"Audio transcription completed for submission {submission_id}")
+        
+    except Exception as e:
+        logger.error(f"Error in audio transcription: {e}")
+        await db.submissions.update_one(
+            {"id": submission_id},
+            {"$set": {"status": "error"}}
+        )
 
 @api_router.get("/submissions/student/{student_id}")
 async def get_student_submissions(student_id: str):

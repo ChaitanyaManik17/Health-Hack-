@@ -33,6 +33,8 @@ const StudentDashboard = () => {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [audioFile, setAudioFile] = useState(null);
   const [uploadMethod, setUploadMethod] = useState('transcript'); // 'transcript' or 'audio'
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState(''); // 'uploading', 'transcribing', 'processing', 'complete'
   
   useEffect(() => {
     fetchSubmissions();

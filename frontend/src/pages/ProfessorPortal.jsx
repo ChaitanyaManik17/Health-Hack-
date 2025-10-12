@@ -231,37 +231,6 @@ const ProfessorPortal = () => {
     }
   };
 
-  const handleAnalytics = async (query = analyticsQuery) => {
-    if (!query.trim()) {
-      toast({
-        title: "Query required",
-        description: "Please enter an analytics question",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsAnalyzing(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API}/analytics/query`, {
-        query: query
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      setAnalyticsResults(response.data);
-    } catch (error) {
-      toast({
-        title: "Analytics failed",
-        description: error.response?.data?.detail || "Could not process query",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

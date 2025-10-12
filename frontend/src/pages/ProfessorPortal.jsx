@@ -20,8 +20,7 @@ import {
   Lock,
   Edit3,
   Save,
-  BarChart3,
-  TrendingUp
+  BarChart3
 } from 'lucide-react';
 
 const ProfessorPortal = () => {

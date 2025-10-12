@@ -122,9 +122,12 @@ class Evaluation(BaseModel):
     clinical_reasoning_feedback: str
     overall_pass: bool
     detailed_feedback: Dict[str, Any]
+    report_html: Optional[str] = None  # NEW: Formatted report
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     edited_by_professor: bool = False
     professor_notes: Optional[str] = None
+    is_published: bool = False  # NEW: Published state
+    is_read_only: bool = False  # NEW: Read-only after publish
 
 class EvaluationUpdate(BaseModel):
     critical_action_score: Optional[float] = None

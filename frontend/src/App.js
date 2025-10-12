@@ -5,6 +5,7 @@ import axios from 'axios';
 import Login from './pages/Login';
 import StudentPortal from './pages/StudentPortal';
 import ProfessorPortal from './pages/ProfessorPortal';
+import ProfessorAnalytics from './pages/ProfessorAnalytics';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;

@@ -35,7 +35,7 @@ function App() {
             path="/student" 
             element={
               <ProtectedRoute requiredRole="student">
-                <StudentDashboard />
+                <StudentPortal />
               </ProtectedRoute>
             } 
           />
@@ -43,15 +43,7 @@ function App() {
             path="/professor" 
             element={
               <ProtectedRoute requiredRole="professor">
-                <ProfessorDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/professor/analytics" 
-            element={
-              <ProtectedRoute requiredRole="professor">
-                <ProfessorAnalytics />
+                <ProfessorPortal />
               </ProtectedRoute>
             } 
           />

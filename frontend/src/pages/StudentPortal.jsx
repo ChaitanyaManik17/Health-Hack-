@@ -437,6 +437,191 @@ const StudentPortal = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Report Viewer Modal */}
+        {selectedReport && selectedReport.evaluation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-600 text-white sticky top-0 z-10">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-xl">Your OSCE Evaluation Report</CardTitle>
+                    <CardDescription className="text-blue-100">
+                      Submission ID: {selectedReport.id.substring(0, 8)}... • 
+                      {new Date(selectedReport.published_at || selectedReport.created_at).toLocaleDateString()}
+                    </CardDescription>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedReport(null)}
+                    className="text-white border-white hover:bg-blue-700"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {/* Display Report Scores */}
+                <div className="space-y-6">
+                  {/* Overall Status */}
+                  <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                    <h2 className="text-2xl font-bold mb-2">
+                      {selectedReport.evaluation.overall_pass ? (
+                        <span className="text-green-600">✓ PASS</span>
+                      ) : (
+                        <span className="text-amber-600">⚠ NEEDS IMPROVEMENT</span>
+                      )}
+                    </h2>
+                    <p className="text-sm text-slate-600">
+                      Generated on {new Date(selectedReport.evaluation.created_at).toLocaleString()}
+                    </p>
+                  </div>
+
+                  {/* Scores Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="border-2 border-blue-200">
+                      <CardContent className="pt-6">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-2">Critical Actions</h3>
+                        <p className="text-4xl font-bold text-blue-600">
+                          {selectedReport.evaluation.critical_action_score?.toFixed(1)}%
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">
+                          {selectedReport.evaluation.critical_action_score >= 70 ? '✓ Pass' : '✗ Below threshold'}
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-purple-200">
+                      <CardContent className="pt-6">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-2">Communication</h3>
+                        <p className="text-4xl font-bold text-purple-600">
+                          {selectedReport.evaluation.communication_score?.toFixed(1)}%
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">
+                          {selectedReport.evaluation.communication_score >= 70 ? '✓ Pass' : '✗ Below threshold'}
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-indigo-200">
+                      <CardContent className="pt-6">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-2">Clinical Reasoning</h3>
+                        <p className="text-4xl font-bold text-indigo-600">
+                          {selectedReport.evaluation.clinical_reasoning_score}/10
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">
+                          {selectedReport.evaluation.clinical_reasoning_score >= 6 ? '✓ Pass' : '✗ Below threshold'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Detailed Feedback Sections */}
+                  <div className="space-y-4">
+                    <div className="border-2 border-slate-200 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+                        <CheckCircle2 className="w-5 h-5 mr-2 text-blue-600" />
+                        Critical Actions Feedback
+                      </h3>
+                      <p className="text-slate-700 leading-relaxed">
+                        {selectedReport.evaluation.critical_action_feedback}
+                      </p>
+                    </div>
+
+                    <div className="border-2 border-slate-200 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+                        <CheckCircle2 className="w-5 h-5 mr-2 text-purple-600" />
+                        Communication & Empathy Feedback
+                      </h3>
+                      <p className="text-slate-700 leading-relaxed">
+                        {selectedReport.evaluation.communication_feedback}
+                      </p>
+                      
+                      {/* Show 7-domain breakdown if available */}
+                      {selectedReport.evaluation.detailed_feedback?.communication && (
+                        <div className="mt-4 grid grid-cols-2 gap-3">
+                          <div className="bg-slate-50 p-3 rounded">
+                            <p className="text-xs font-medium text-slate-600">Sets Stage</p>
+                            <p className="text-lg font-bold text-slate-900">
+                              {selectedReport.evaluation.detailed_feedback.communication.sets_stage}/5
+                            </p>
+                          </div>
+                          <div className="bg-slate-50 p-3 rounded">
+                            <p className="text-xs font-medium text-slate-600">Active Listening</p>
+                            <p className="text-lg font-bold text-slate-900">
+                              {selectedReport.evaluation.detailed_feedback.communication.active_listening}/5
+                            </p>
+                          </div>
+                          <div className="bg-slate-50 p-3 rounded">
+                            <p className="text-xs font-medium text-slate-600">Shows Compassion</p>
+                            <p className="text-lg font-bold text-slate-900">
+                              {selectedReport.evaluation.detailed_feedback.communication.shows_compassion}/5
+                            </p>
+                          </div>
+                          <div className="bg-slate-50 p-3 rounded">
+                            <p className="text-xs font-medium text-slate-600">Encourages Sharing</p>
+                            <p className="text-lg font-bold text-slate-900">
+                              {selectedReport.evaluation.detailed_feedback.communication.encourages_sharing}/5
+                            </p>
+                          </div>
+                          <div className="bg-slate-50 p-3 rounded">
+                            <p className="text-xs font-medium text-slate-600">Adjusts Communication</p>
+                            <p className="text-lg font-bold text-slate-900">
+                              {selectedReport.evaluation.detailed_feedback.communication.adjusts_communication}/5
+                            </p>
+                          </div>
+                          <div className="bg-slate-50 p-3 rounded">
+                            <p className="text-xs font-medium text-slate-600">Gives Ownership</p>
+                            <p className="text-lg font-bold text-slate-900">
+                              {selectedReport.evaluation.detailed_feedback.communication.gives_ownership}/5
+                            </p>
+                          </div>
+                          <div className="bg-slate-50 p-3 rounded col-span-2">
+                            <p className="text-xs font-medium text-slate-600">Collaborative Plan</p>
+                            <p className="text-lg font-bold text-slate-900">
+                              {selectedReport.evaluation.detailed_feedback.communication.collaborative_plan}/5
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-2 border-slate-200 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+                        <CheckCircle2 className="w-5 h-5 mr-2 text-indigo-600" />
+                        Clinical Reasoning Feedback
+                      </h3>
+                      <p className="text-slate-700 leading-relaxed">
+                        {selectedReport.evaluation.clinical_reasoning_feedback}
+                      </p>
+                    </div>
+
+                    {selectedReport.evaluation.professor_notes && (
+                      <div className="border-2 border-amber-200 bg-amber-50 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-amber-900 mb-3">
+                          Professor's Notes
+                        </h3>
+                        <p className="text-amber-800 leading-relaxed">
+                          {selectedReport.evaluation.professor_notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Download Button */}
+                  <Button
+                    onClick={() => handleDownloadReport(selectedReport)}
+                    className="w-full h-12 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download Full Report
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   );

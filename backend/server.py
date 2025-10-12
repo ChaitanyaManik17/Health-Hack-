@@ -105,6 +105,16 @@ class EvaluationUpdate(BaseModel):
     clinical_reasoning_feedback: Optional[str] = None
     professor_notes: Optional[str] = None
 
+class FeedbackCreate(BaseModel):
+    user_id: str
+    user_name: str
+    user_email: str
+    rating: int
+    feedback_text: str
+
+class AnalyticsQuery(BaseModel):
+    query: str
+
 # --- Helper Functions ---
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)

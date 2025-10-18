@@ -1,6 +1,3 @@
-https://medeval-ai.preview.emergentagent.com/login
-
-`markdown
 # 🧠 S.H.I.E.L.D. Labs  
 ### *Strategic Health Innovation & Explainable Learning Division*  
 > **AI-Powered, Explainable Evaluation for Objective Structured Clinical Examinations (OSCEs)**  
